@@ -11,6 +11,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SERVICE_ROLE_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Optional Config
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
 DATAFORSEO_LOGIN = os.getenv("DATAFORSEO_LOGIN")
 DATAFORSEO_PASSWORD = os.getenv("DATAFORSEO_PASSWORD")
