@@ -22,6 +22,7 @@ def get_google_autocomplete(query: str) -> List[str]:
     url = f"http://suggestqueries.google.com/complete/search?client=firefox&q={requests.utils.quote(query)}"
     try:
         response = requests.get(url, headers=HEADERS, timeout=5)
+        print(f"Fetching autocomplete for '{query}' from Google: {response.json()}")
         if response.status_code == 200:
             data = response.json()
             # The structure is: [query, [suggestions...], ...]
@@ -49,6 +50,7 @@ def get_competitor_urls(query: str, max_results: int = 5) -> List[str]:
             res = requests.get(url, params=params, timeout=10)
             if res.status_code == 200:
                 data = res.json()
+                print(f"SerpApi results for '{query}': {data}")
                 results = data.get("organic_results", [])
                 urls = [item["link"] for item in results if "link" in item]
                 return urls[:max_results]
@@ -60,9 +62,11 @@ def get_competitor_urls(query: str, max_results: int = 5) -> List[str]:
         urls = []
         with DDGS() as ddgs:
             results = ddgs.text(query, max_results=max_results)
+            print(f"DuckDuckGo results for '{query}': {results}")
             for r in results:
                 if "link" in r:
                     urls.append(r["link"])
+        print(f"Filtered URLs for '{query}': {urls}")
         return urls[:max_results]
     except Exception as e:
         print(f"DuckDuckGo search failed: {e}")
@@ -111,6 +115,7 @@ def crawl_competitor_page(url: str) -> Dict[str, Any]:
         # Clean whitespace and count words
         words = re.findall(r"\b\w+\b", text)
         result["word_count"] = len(words)
+        print(f"Word count for '{url}': {result['word_count']}")
 
     except Exception as e:
         result["error"] = str(e)
@@ -144,8 +149,10 @@ def get_dataforseo_metrics(keywords: List[str]) -> Dict[str, Dict[str, Any]]:
                 json=payload,
                 timeout=15,
             )
+            print(f"DataForSEO response for keywords chunk {i}-{i+len(chunk)}: {response.status_code}")
             if response.status_code == 200:
                 data = response.json()
+                print(f"Response content: {data}")
                 tasks = data.get("tasks", [])
                 for task in tasks:
                     results = task.get("result", [])
