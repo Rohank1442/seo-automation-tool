@@ -191,6 +191,7 @@ def run_research_phase():
     validated_clusters = []
     for c in clusters_resp.clusters:
         suggestions = get_google_autocomplete(c.name)
+        print(f"Cluster '{c.name}' suggestions: {suggestions}")
         # Append some popular autocomplete keywords to description to show real user search interest
         desc = c.description
         if suggestions:
