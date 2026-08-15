@@ -25,6 +25,7 @@ def get_google_autocomplete(query: str) -> List[str]:
         print(f"Fetching autocomplete for '{query}' from Google: {response.json()}")
         if response.status_code == 200:
             data = response.json()
+            print(f"Autocomplete data for ----------- in google seach autocomplete '{query}': {data}")
             # The structure is: [query, [suggestions...], ...]
             if len(data) > 1 and isinstance(data[1], list):
                 return data[1]

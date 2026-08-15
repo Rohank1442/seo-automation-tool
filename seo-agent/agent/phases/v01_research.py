@@ -189,6 +189,8 @@ def run_research_phase():
     )
 
     validated_clusters = []
+
+    # autocomplete working and returning suggestions correctly
     for c in clusters_resp.clusters:
         suggestions = get_google_autocomplete(c.name)
         print(f"Cluster '{c.name}' suggestions: {suggestions}")
@@ -271,9 +273,12 @@ def run_research_phase():
         # 6a. Harvesting keyword ideas
         unique_kws = set()
         print("  • Harvesting keyword ideas from Google Autocomplete...")
+
+        # when adding modifiers, then the google search autocomplete is not returning any suggestions. Debug this issue here.
         for mod in modifiers:
             query = f"{c_name} {mod}".strip()
             suggestions = get_google_autocomplete(query)
+            print(f"--------------- Autocomplete for '{query}': {suggestions}")
             for s in suggestions:
                 # Clean keyword: lowercase, strip whitespace
                 clean_s = s.strip().lower()
@@ -285,6 +290,8 @@ def run_research_phase():
 
         kw_list = list(unique_kws)
         print(f"  • Found {len(kw_list)} unique candidate keywords.")
+
+        # debug untill here first
 
         # 6b. Volume & Difficulty Metrics
         print("  • Fetching metrics (DataForSEO)...")
