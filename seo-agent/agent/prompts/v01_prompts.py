@@ -40,6 +40,12 @@ class ContentGap(BaseModel):
 class ContentGapAnalysisResponse(BaseModel):
     gaps: List[ContentGap] = Field(description="List of identified content gaps per cluster.")
 
+class ClusterSeedsResponse(BaseModel):
+    seeds: List[str] = Field(description="3 to 5 highly organic, search-friendly seed phrases related to this cluster (e.g. 'capsule wardrobe tips', 'how to plan capsule wardrobe').")
+
+class PaaQuestionsResponse(BaseModel):
+    questions: List[str] = Field(description="5 highly realistic Google 'People Also Ask' questions for this search term.")
+
 
 # --- SYSTEM PROMPTS ---
 
@@ -53,6 +59,11 @@ Generate 1 to 3 targeted clarification questions to extract details like target 
 CLUSTER_GENERATION_SYSTEM_PROMPT = """You are an SEO Strategist. Based on the confirmed project description, break down the niche into 5 to 10 logical topic clusters.
 Each cluster should represent a major category of content that would exist on the website.
 Avoid overlapping topics. Keep cluster names concise but descriptive."""
+
+CLUSTER_SEEDS_SYSTEM_PROMPT = """You are an SEO Keyword Planner. Given a topic cluster name and its description, generate 3 to 5 organic, search-friendly seed keywords or search phrases that real users actually type into Google to find information on this topic. 
+Do not return formal academic terms; return natural search queries."""
+
+PAA_SIMULATION_SYSTEM_PROMPT = """You are Google Search Engine. Generate the top 5 'People Also Ask' questions that are most relevant and commonly displayed for the given search query. These should be natural questions that searchers ask."""
 
 INTENT_CLASSIFICATION_SYSTEM_PROMPT = """You are an SEO analyzer. Classify the search intent of the provided list of keywords.
 Intent types:

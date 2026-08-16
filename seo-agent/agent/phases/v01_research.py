@@ -18,6 +18,7 @@ from core.scraper import (
     get_competitor_urls,
     crawl_competitor_page,
     get_dataforseo_metrics,
+    get_people_also_ask,
 )
 from prompts.v01_prompts import (
     ProjectExtraction,
@@ -25,9 +26,13 @@ from prompts.v01_prompts import (
     TopicClustersResponse,
     BatchKeywordClassification,
     ContentGapAnalysisResponse,
+    ClusterSeedsResponse,
+    PaaQuestionsResponse,
     EXTRACTION_SYSTEM_PROMPT,
     FOLLOWUP_SYSTEM_PROMPT,
     CLUSTER_GENERATION_SYSTEM_PROMPT,
+    CLUSTER_SEEDS_SYSTEM_PROMPT,
+    PAA_SIMULATION_SYSTEM_PROMPT,
     INTENT_CLASSIFICATION_SYSTEM_PROMPT,
     GAP_ANALYSIS_SYSTEM_PROMPT,
 )
@@ -250,46 +255,77 @@ def run_research_phase():
     )
     print_separator()
 
-    # Modifiers for autocomplete harvesting
-    modifiers = [
-        "",
-        "for beginners",
-        "how to",
-        "best",
-        "vs",
-        "tips",
-        "how",
-        "what is",
-        "why",
-    ]
-
     all_cluster_keywords: Dict[str, List[Dict[str, Any]]] = {}
 
     for cluster in saved_clusters:
         c_id = cluster["id"]
         c_name = cluster["name"]
+        c_desc = cluster.get("description", "")
         print(f"\nProcessing Cluster: '{c_name}'...")
 
-        # 6a. Harvesting keyword ideas
-        unique_kws = set()
-        print("  • Harvesting keyword ideas from Google Autocomplete...")
+        # 6a. Generating search-friendly seeds for the cluster
+        print("  • Generating search-friendly seeds using Gemini...")
+        seed_prompt = (
+            f"Topic Cluster: {c_name}\n"
+            f"Description: {c_desc}\n"
+            f"Niche/Project context: {extraction.core_topic}"
+        )
+        try:
+            seeds_resp = generate_json(
+                prompt=seed_prompt,
+                response_schema=ClusterSeedsResponse,
+                system_instruction=CLUSTER_SEEDS_SYSTEM_PROMPT
+            )
+            seeds = seeds_resp.seeds
+            print(f"    - Generated seeds: {seeds}")
+        except Exception as e:
+            print(f"    - Failed to generate seeds: {e}. Using cluster name as seed.")
+            seeds = [c_name]
 
-        # when adding modifiers, then the google search autocomplete is not returning any suggestions. Debug this issue here.
-        for mod in modifiers:
-            query = f"{c_name} {mod}".strip()
-            suggestions = get_google_autocomplete(query)
-            print(f"--------------- Autocomplete for '{query}': {suggestions}")
+        # 6b. Harvesting keyword ideas (Autocomplete + PAA)
+        unique_kws = set()
+        print("  • Harvesting keyword ideas (Autocomplete + People Also Ask)...")
+        
+        for seed in seeds:
+            # 1. Autocomplete (First-level)
+            suggestions = get_google_autocomplete(seed)
+            print(f"    - Autocomplete suggestions for '{seed}': {len(suggestions)}")
             for s in suggestions:
-                # Clean keyword: lowercase, strip whitespace
                 clean_s = s.strip().lower()
                 if clean_s:
                     unique_kws.add(clean_s)
-
-        # Add the seed name itself
+            
+            # 2. People Also Ask (PAA)
+            paa_questions = get_people_also_ask(seed)
+            if not paa_questions:
+                # Fallback to simulated PAA using Gemini
+                try:
+                    paa_prompt = f"Generate simulated PAA questions for the query: '{seed}'"
+                    paa_resp = generate_json(
+                        prompt=paa_prompt,
+                        response_schema=PaaQuestionsResponse,
+                        system_instruction=PAA_SIMULATION_SYSTEM_PROMPT
+                    )
+                    paa_questions = paa_resp.questions
+                    print(f"    - Simulated PAA questions for '{seed}': {len(paa_questions)}")
+                except Exception as e:
+                    print(f"    - Failed to simulate PAA: {e}")
+                    paa_questions = []
+            else:
+                print(f"    - Fetched SerpApi PAA questions for '{seed}': {len(paa_questions)}")
+                
+            for q in paa_questions:
+                clean_q = q.strip()
+                if clean_q:
+                    unique_kws.add(clean_q.lower())
+                    
+        # Add the seeds and cluster name themselves
+        for seed in seeds:
+            unique_kws.add(seed.lower())
         unique_kws.add(c_name.lower())
 
         kw_list = list(unique_kws)
-        print(f"  • Found {len(kw_list)} unique candidate keywords.")
+        print(f"  • Found {len(kw_list)} unique candidate keywords/questions.")
 
         # debug untill here first
 

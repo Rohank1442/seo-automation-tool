@@ -169,3 +169,31 @@ def get_dataforseo_metrics(keywords: List[str]) -> Dict[str, Dict[str, Any]]:
             print(f"DataForSEO API call failed: {e}")
 
     return metrics
+
+
+def get_people_also_ask(query: str) -> List[str]:
+    """
+    Fetch People Also Ask questions for a query.
+    Requires SerpApi. If SerpApi is not configured or fails, returns an empty list.
+    """
+    if not SERPAPI_API_KEY:
+        return []
+
+    url = "https://serpapi.com/search.json"
+    params = {
+        "q": query,
+        "api_key": SERPAPI_API_KEY,
+        "engine": "google",
+        "num": 5
+    }
+    try:
+        res = requests.get(url, params=params, timeout=10)
+        if res.status_code == 200:
+            data = res.json()
+            paa_items = data.get("people_also_ask", [])
+            questions = [item["question"] for item in paa_items if "question" in item]
+            return questions
+    except Exception as e:
+        print(f"SerpApi PAA fetch failed: {e}")
+    return []
+
