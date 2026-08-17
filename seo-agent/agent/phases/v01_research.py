@@ -300,6 +300,7 @@ def run_research_phase():
             paa_questions = get_people_also_ask(seed)
             if not paa_questions:
                 # Fallback to Option 1: Autocomplete Q&A Harvester
+                # work on the fallback part here then move to step-7
                 print(f"    - SerpApi not configured. Running Autocomplete Q&A Harvester for '{seed}'...")
                 q_prefixes = ["how to", "why", "what is", "can you", "where to"]
                 for prefix in q_prefixes:
@@ -318,7 +319,7 @@ def run_research_phase():
                         
             # 3. DuckDuckGo Related Searches (Option 2)
             ddg_suggestions = get_ddg_related_searches(seed)
-            print(f"    - DuckDuckGo suggestions for '{seed}': {len(ddg_suggestions)}")
+            print(f"    - DuckDuckGo suggestions for '{seed}': {ddg_suggestions}")
             for ds in ddg_suggestions:
                 clean_ds = ds.strip().lower()
                 if clean_ds:
@@ -327,7 +328,7 @@ def run_research_phase():
             # 4. Competitor Crawl Question Extraction (Step 7)
             #     We crawl the top 5 competitor URLs. While parsing their HTML, we extract any H2 or H3 headings that end with a ? (question mark).
             #     Result: The exact FAQ topics and questions your top ranking competitors are answering in their articles.
-                    
+
         # Add the seeds and cluster name themselves
         for seed in seeds:
             unique_kws.add(seed.lower())

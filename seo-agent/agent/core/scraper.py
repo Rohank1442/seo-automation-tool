@@ -210,6 +210,7 @@ def get_ddg_related_searches(query: str) -> List[str]:
         response = requests.get(url, headers=HEADERS, timeout=5)
         if response.status_code == 200:
             data = response.json()
+            print(f"-------------------------- DuckDuckGo autocomplete data for '{query}': {data}")
             if len(data) > 1 and isinstance(data[1], list):
                 return data[1]
     except Exception as e:
