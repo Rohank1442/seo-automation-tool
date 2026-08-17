@@ -19,6 +19,7 @@ from core.scraper import (
     crawl_competitor_page,
     get_dataforseo_metrics,
     get_people_also_ask,
+    get_ddg_related_searches,
 )
 from prompts.v01_prompts import (
     ProjectExtraction,
@@ -298,26 +299,34 @@ def run_research_phase():
             # 2. People Also Ask (PAA)
             paa_questions = get_people_also_ask(seed)
             if not paa_questions:
-                # Fallback to simulated PAA using Gemini
-                try:
-                    paa_prompt = f"Generate simulated PAA questions for the query: '{seed}'"
-                    paa_resp = generate_json(
-                        prompt=paa_prompt,
-                        response_schema=PaaQuestionsResponse,
-                        system_instruction=PAA_SIMULATION_SYSTEM_PROMPT
-                    )
-                    paa_questions = paa_resp.questions
-                    print(f"    - Simulated PAA questions for '{seed}': {len(paa_questions)}")
-                except Exception as e:
-                    print(f"    - Failed to simulate PAA: {e}")
-                    paa_questions = []
+                # Fallback to Option 1: Autocomplete Q&A Harvester
+                print(f"    - SerpApi not configured. Running Autocomplete Q&A Harvester for '{seed}'...")
+                q_prefixes = ["how to", "why", "what is", "can you", "where to"]
+                for prefix in q_prefixes:
+                    q_query = f"{prefix} {seed}"
+                    q_suggestions = get_google_autocomplete(q_query)
+                    for qs in q_suggestions:
+                        clean_qs = qs.strip().lower()
+                        if clean_qs:
+                            unique_kws.add(clean_qs)
             else:
                 print(f"    - Fetched SerpApi PAA questions for '{seed}': {len(paa_questions)}")
-                
-            for q in paa_questions:
-                clean_q = q.strip()
-                if clean_q:
-                    unique_kws.add(clean_q.lower())
+                for q in paa_questions:
+                    clean_q = q.strip().lower()
+                    if clean_q:
+                        unique_kws.add(clean_q)
+                        
+            # 3. DuckDuckGo Related Searches (Option 2)
+            ddg_suggestions = get_ddg_related_searches(seed)
+            print(f"    - DuckDuckGo suggestions for '{seed}': {len(ddg_suggestions)}")
+            for ds in ddg_suggestions:
+                clean_ds = ds.strip().lower()
+                if clean_ds:
+                    unique_kws.add(clean_ds)
+
+            # 4. Competitor Crawl Question Extraction (Step 7)
+            #     We crawl the top 5 competitor URLs. While parsing their HTML, we extract any H2 or H3 headings that end with a ? (question mark).
+            #     Result: The exact FAQ topics and questions your top ranking competitors are answering in their articles.
                     
         # Add the seeds and cluster name themselves
         for seed in seeds:
@@ -325,6 +334,9 @@ def run_research_phase():
         unique_kws.add(c_name.lower())
 
         kw_list = list(unique_kws)
+        for kw in kw_list:
+            print("----------------- all keywords:", kw)
+
         print(f"  • Found {len(kw_list)} unique candidate keywords/questions.")
 
         # debug untill here first
@@ -438,9 +450,8 @@ def run_research_phase():
                     "url": p["url"],
                     "title": p["title"],
                     "h1s": p["h1s"],
-                    "headings": p["headings"][
-                        :15
-                    ],  # limit headings size to prevent prompt bloating
+                    "headings": p["headings"][:15],  # limit headings size to prevent prompt bloating
+                    "questions": p.get("questions", []), # Option 3: competitor FAQ questions ending in ?
                     "word_count": p["word_count"],
                 }
             )
@@ -507,6 +518,11 @@ def run_research_phase():
                 f.write(
                     f"  - [{comp['title'] or comp['url']}]({comp['url']}) (Word count: {comp['word_count']})\n"
                 )
+                comp_qs = comp.get("questions", [])
+                if comp_qs:
+                    f.write("    - *Top Competitor FAQ Questions*:\n")
+                    for q in comp_qs[:3]:
+                        f.write(f"      - {q}\n")
 
             # Content Gaps
             f.write(f"#### Identified Content Gaps:\n")

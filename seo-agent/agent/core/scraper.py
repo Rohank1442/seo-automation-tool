@@ -83,6 +83,7 @@ def crawl_competitor_page(url: str) -> Dict[str, Any]:
         "title": "",
         "h1s": [],
         "headings": [],
+        "questions": [],
         "word_count": 0,
         "error": None,
     }
@@ -102,11 +103,13 @@ def crawl_competitor_page(url: str) -> Dict[str, Any]:
             h1.get_text().strip() for h1 in soup.find_all("h1") if h1.get_text().strip()
         ]
 
-        # 3. H2/H3 structure
+        # 3. H2/H3 structure and FAQ questions
         for heading in soup.find_all(["h2", "h3"]):
             text = heading.get_text().strip()
             if text:
                 result["headings"].append({"tag": heading.name, "text": text})
+                if text.endswith("?"):
+                    result["questions"].append(text)
 
         # 4. Word count estimation
         # Remove script and style elements
@@ -195,5 +198,35 @@ def get_people_also_ask(query: str) -> List[str]:
             return questions
     except Exception as e:
         print(f"SerpApi PAA fetch failed: {e}")
+    return []
+
+
+def get_ddg_related_searches(query: str) -> List[str]:
+    """
+    Fetch related queries / suggestions from DuckDuckGo's autocomplete endpoint.
+    """
+    url = f"https://ac.duckduckgo.com/ac/?q={requests.utils.quote(query)}&type=list"
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if len(data) > 1 and isinstance(data[1], list):
+                return data[1]
+    except Exception as e:
+        print(f"DuckDuckGo direct suggestions fetch failed for '{query}': {e}. Trying library fallback...")
+
+    # Library fallback
+    try:
+        suggestions = []
+        with DDGS() as ddgs:
+            results = ddgs.suggestions(query)
+            for r in results:
+                if isinstance(r, dict) and "phrase" in r:
+                    suggestions.append(r["phrase"])
+                elif isinstance(r, str):
+                    suggestions.append(r)
+        return suggestions
+    except Exception as e:
+        print(f"DuckDuckGo suggestions library failed: {e}")
     return []
 
