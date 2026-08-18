@@ -360,28 +360,27 @@ def run_research_phase():
 
         print(f"  • Found {len(kw_list)} unique candidate keywords/questions.")
 
-        # 6b. Volume & Difficulty Metrics
+        # 6b. Keyword Metrics
         print("  • Fetching metrics (DataForSEO)...")
-        # Query DataForSEO
+
         df_metrics = get_dataforseo_metrics(kw_list)
+
         print(f"  • Metrics fetched for {len(df_metrics)} keywords.")
 
-        # Process and build initial keyword list
         keywords_data = []
+
         for kw in kw_list:
-            vol = None
-            diff = None
-            if kw in df_metrics:
-                vol = df_metrics[kw].get("volume")
-                diff = df_metrics[kw].get("difficulty")
+            metrics = df_metrics.get(kw, {})
 
             keywords_data.append(
                 {
                     "keyword": kw,
-                    "volume": vol,
-                    "difficulty": diff,
-                    "intent": "informational",  # default
-                    "is_question": False,  # default
+                    "volume": metrics.get("volume"),
+                    "competition": metrics.get("competition"),
+                    "competition_level": metrics.get("competition_level"),
+                    "cpc": metrics.get("cpc"),
+                    "intent": "informational",
+                    "is_question": False,
                 }
             )
 

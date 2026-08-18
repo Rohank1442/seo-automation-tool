@@ -25,7 +25,9 @@ def get_google_autocomplete(query: str) -> List[str]:
         print(f"Fetching autocomplete for '{query}' from Google: {response.json()}")
         if response.status_code == 200:
             data = response.json()
-            print(f"Autocomplete data for ----------- in google seach autocomplete '{query}': {data}")
+            print(
+                f"Autocomplete data for ----------- in google seach autocomplete '{query}': {data}"
+            )
             # The structure is: [query, [suggestions...], ...]
             if len(data) > 1 and isinstance(data[1], list):
                 return data[1]
@@ -127,49 +129,123 @@ def crawl_competitor_page(url: str) -> Dict[str, Any]:
     return result
 
 
-def get_dataforseo_metrics(keywords: List[str]) -> Dict[str, Dict[str, Any]]:
+def get_dataforseo_metrics(
+    keywords: List[str],
+) -> Dict[str, Dict[str, Any]]:
     """
-    Query DataForSEO API for search volume and keyword difficulty.
-    Returns mapping of keyword -> {volume, difficulty}.
+    Query DataForSEO for Google keyword metrics.
+
+    Returns:
+        {
+            "keyword": {
+                "volume": int | None,
+                "competition": float | None,
+                "competition_level": str | None,
+                "cpc": float | None,
+                "source": "dataforseo",
+            }
+        }
+
+    If DataForSEO is unavailable or fails, returns whatever
+    metrics were successfully retrieved. The caller can continue
+    processing all keywords regardless.
     """
-    metrics = {}
+
+    metrics: Dict[str, Dict[str, Any]] = {}
+
     if not DATAFORSEO_LOGIN or not DATAFORSEO_PASSWORD:
+        print("  • DataForSEO credentials not configured. Skipping metrics.")
+        return metrics
+
+    if not keywords:
         return metrics
 
     url = "https://api.dataforseo.com/v3/keywords_data/google/search_volume/live"
-    # DataForSEO allows up to 700 keywords per request
-    # We will process them in chunks of 500
+
+    # API supports up to 700 keywords per request.
     chunk_size = 500
+
     for i in range(0, len(keywords), chunk_size):
         chunk = keywords[i : i + chunk_size]
+
         payload = [
-            {"keywords": chunk, "location_code": 2840, "language_code": "en"}  # US
+            {
+                "keywords": chunk,
+                "location_code": 2840,  # United States
+                "language_code": "en",
+            }
         ]
+
         try:
-            # Note: Basic auth uses base64 encoded user:pass
             response = requests.post(
                 url,
                 auth=(DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD),
                 json=payload,
-                timeout=15,
+                timeout=30,
             )
-            print(f"DataForSEO response for keywords chunk {i}-{i+len(chunk)}: {response.status_code}")
-            if response.status_code == 200:
-                data = response.json()
-                print(f"Response content: {data}")
-                tasks = data.get("tasks", [])
-                for task in tasks:
-                    results = task.get("result", [])
-                    for res in results:
-                        kw = res.get("keyword")
-                        metrics[kw] = {
-                            "volume": res.get("search_volume", 0),
-                            "difficulty": res.get(
-                                "competition_level", 0
-                            ),  # or custom metric
-                        }
+
+            print(
+                f"  • DataForSEO chunk "
+                f"{i + 1}-{i + len(chunk)}: "
+                f"HTTP {response.status_code}"
+            )
+
+            # HTTP-level failure
+            if response.status_code != 200:
+                print(f"    - DataForSEO HTTP error: " f"{response.status_code}")
+                print(f"    - Response: {response.text[:500]}")
+                continue
+
+            data = response.json()
+
+            # API-level failure
+            if data.get("status_code") != 20000:
+                print(
+                    f"    - DataForSEO API error: "
+                    f"{data.get('status_code')} - "
+                    f"{data.get('status_message')}"
+                )
+                continue
+
+            tasks = data.get("tasks", [])
+
+            for task in tasks:
+
+                # Individual task failure
+                if task.get("status_code") != 20000:
+                    print(
+                        f"    - DataForSEO task error: "
+                        f"{task.get('status_code')} - "
+                        f"{task.get('status_message')}"
+                    )
+                    continue
+
+                results = task.get("result") or []
+
+                for result in results:
+                    keyword = result.get("keyword")
+
+                    if not keyword:
+                        continue
+
+                    metrics[keyword.lower()] = {
+                        "volume": result.get("search_volume"),
+                        "competition": result.get("competition"),
+                        "competition_level": result.get("competition_level"),
+                        "cpc": result.get("cpc"),
+                        "source": "dataforseo",
+                    }
+
+            print(f"    - Metrics received: " f"{len(metrics)} total")
+
+        except requests.RequestException as e:
+            print(f"    - DataForSEO request failed: {e}")
+
+        except ValueError as e:
+            print(f"    - Invalid JSON from DataForSEO: {e}")
+
         except Exception as e:
-            print(f"DataForSEO API call failed: {e}")
+            print(f"    - Unexpected DataForSEO error: {e}")
 
     return metrics
 
@@ -183,12 +259,7 @@ def get_people_also_ask(query: str) -> List[str]:
         return []
 
     url = "https://serpapi.com/search.json"
-    params = {
-        "q": query,
-        "api_key": SERPAPI_API_KEY,
-        "engine": "google",
-        "num": 5
-    }
+    params = {"q": query, "api_key": SERPAPI_API_KEY, "engine": "google", "num": 5}
     try:
         res = requests.get(url, params=params, timeout=10)
         if res.status_code == 200:
@@ -210,11 +281,15 @@ def get_ddg_related_searches(query: str) -> List[str]:
         response = requests.get(url, headers=HEADERS, timeout=5)
         if response.status_code == 200:
             data = response.json()
-            print(f"-------------------------- DuckDuckGo autocomplete data for '{query}': {data}")
+            print(
+                f"-------------------------- DuckDuckGo autocomplete data for '{query}': {data}"
+            )
             if len(data) > 1 and isinstance(data[1], list):
                 return data[1]
     except Exception as e:
-        print(f"DuckDuckGo direct suggestions fetch failed for '{query}': {e}. Trying library fallback...")
+        print(
+            f"DuckDuckGo direct suggestions fetch failed for '{query}': {e}. Trying library fallback..."
+        )
 
     # Library fallback
     try:
@@ -230,4 +305,3 @@ def get_ddg_related_searches(query: str) -> List[str]:
     except Exception as e:
         print(f"DuckDuckGo suggestions library failed: {e}")
     return []
-
