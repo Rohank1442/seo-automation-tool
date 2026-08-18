@@ -1,7 +1,8 @@
 import json
 import os
 import sys
-from typing import List, Dict, Any, Tuple
+import re
+from typing import List, Dict, Any
 from pydantic import BaseModel
 
 from core.config import validate_config, GEMINI_API_KEY
@@ -298,13 +299,30 @@ def run_research_phase():
             
             # 2. People Also Ask (PAA)
             paa_questions = get_people_also_ask(seed)
+
             if not paa_questions:
-                # Fallback to Option 1: Autocomplete Q&A Harvester
-                # work on the fallback part here then move to step-7
                 print(f"    - SerpApi not configured. Running Autocomplete Q&A Harvester for '{seed}'...")
-                q_prefixes = ["how to", "why", "what is", "can you", "where to"]
-                for prefix in q_prefixes:
-                    q_query = f"{prefix} {seed}"
+                
+                # 1. Clean the seed by stripping common leading question words
+                clean_seed = seed.strip().lower()
+                clean_seed = re.sub(r'^(how to|why|what is|can you|where to|what|how|where)\s+', '', clean_seed)
+                
+                # Optional: Clean up leading prepositions left behind (e.g., "for my body shape")
+                base_target = re.sub(r'^(for|to|on|in|with)\s+', '', clean_seed)
+
+                # 2. Build natural query templates using wildcards (_) and clean variations
+                q_queries = [
+                    f"how to {base_target}",
+                    f"why {base_target}",
+                    f"what is {base_target}",
+                    f"can you {base_target}",
+                    f"where to {base_target}",
+                    f"best {base_target} for",      # Great for buyer-intent keywords
+                    f"{base_target} vs",             # Great for comparison keywords
+                    f"{base_target} _"               # Wildcard triggers mid-tail suggestions
+                ]
+
+                for q_query in q_queries:
                     q_suggestions = get_google_autocomplete(q_query)
                     for qs in q_suggestions:
                         clean_qs = qs.strip().lower()
