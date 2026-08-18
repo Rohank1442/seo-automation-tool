@@ -267,6 +267,7 @@ def run_research_phase():
 
         # 6a. Generating search-friendly seeds for the cluster
         print("  • Generating search-friendly seeds using Gemini...")
+
         seed_prompt = (
             f"Topic Cluster: {c_name}\n"
             f"Description: {c_desc}\n"
@@ -324,6 +325,7 @@ def run_research_phase():
 
                 for q_query in q_queries:
                     q_suggestions = get_google_autocomplete(q_query)
+                    # print(f"    - Autocomplete suggestions for query '{q_query}': {q_suggestions}")
                     for qs in q_suggestions:
                         clean_qs = qs.strip().lower()
                         if clean_qs:
@@ -353,12 +355,10 @@ def run_research_phase():
         unique_kws.add(c_name.lower())
 
         kw_list = list(unique_kws)
-        for kw in kw_list:
-            print("----------------- all keywords:", kw)
+        # for kw in kw_list:
+            # print("----------------- all keywords:", kw)
 
         print(f"  • Found {len(kw_list)} unique candidate keywords/questions.")
-
-        # debug untill here first
 
         # 6b. Volume & Difficulty Metrics
         print("  • Fetching metrics (DataForSEO)...")
