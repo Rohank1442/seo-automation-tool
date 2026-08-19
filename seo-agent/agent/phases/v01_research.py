@@ -52,7 +52,9 @@ def run_research_phase():
     # 0. Validate Configuration
     validate_config()
 
+    # ============================================================
     # --- STEPS 1 & 2 & 3: IDEA DESCRIPTION, EXTRACTION & CLARIFICATION ---
+    # ============================================================
     print("\n[Step 1] Describe your website idea.")
     print(
         "Example: 'A blog about indoor tomato gardening for apartment dwellers in New York, monetized with affiliate links.'"
@@ -171,7 +173,9 @@ def run_research_phase():
     )
     print("\nProject details updated and saved in Supabase!")
 
+    # ============================================================
     # --- STEPS 4 & 5: CLUSTER GENERATION & APPROVAL ---
+    # ============================================================
     print("\n[Step 4] Finding top-level topic clusters...")
     cluster_prompt = (
         f"Generate topic clusters for:\n"
@@ -424,7 +428,9 @@ def run_research_phase():
         save_keywords(c_id, classified_keywords)
         all_cluster_keywords[c_name] = classified_keywords
 
+    # ============================================================
     # --- STEP 7: CRAWL TOP COMPETITORS PER CLUSTER ---
+    # ============================================================
     print_separator()
     print("\n[Step 7] Crawling Competitors Per Cluster")
     print("Identifying top 5 ranking pages and crawling outline structures...")
