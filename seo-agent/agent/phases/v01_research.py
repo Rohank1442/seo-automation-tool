@@ -507,99 +507,959 @@ def run_research_phase():
             print(f"  • Error during gap analysis: {e}")
             content_gaps[c_name] = []
 
-    # --- STEP 9: SAVE LOCAL REPORT ---
-    print("\n[Step 9] Saving local markdown report...")
+    # ============================================================
+    # STEP 9: SAVE LOCAL REPORT + PAGE OPPORTUNITIES
+    # ============================================================
+
+    print_separator()
+    print("\n[Step 9] Saving SEO research and page-planning reports...")
+    print_separator()
+
     os.makedirs("outputs", exist_ok=True)
+
     report_path = os.path.join("outputs", "research_report.md")
+    page_opportunities_path = os.path.join(
+        "outputs",
+        "page_opportunities.json",
+    )
 
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write(f"# SEO Niche & Keyword Research Report\n\n")
-        f.write(f"## Project Context\n")
-        f.write(f"- **Core Topic**: {extraction.core_topic}\n")
-        f.write(f"- **Target Audience**: {extraction.target_audience}\n")
-        f.write(f"- **Site Goal**: {extraction.site_goal}\n")
-        f.write(f"- **Geographic/Language Scope**: {extraction.geo_scope}\n")
-        f.write(f"- **Constraints**: {extraction.constraints}\n\n")
+    # ------------------------------------------------------------
+    # Build machine-readable page opportunities
+    # ------------------------------------------------------------
 
-        f.write(f"## Topic Clusters Summary\n")
-        for c in saved_clusters:
-            f.write(f"### Cluster: {c['name']}\n")
-            f.write(f"- **Description**: {c['description']}\n")
-            kws = all_cluster_keywords.get(c["name"], [])
-            f.write(f"- **Total Keywords**: {len(kws)}\n")
+    page_opportunities = {
+        "project": {
+            "core_topic": extraction.core_topic,
+            "target_audience": extraction.target_audience,
+            "site_goal": extraction.site_goal,
+            "geo_scope": extraction.geo_scope,
+            "constraints": extraction.constraints,
+        },
+        "clusters": [],
+    }
 
-            # Subtopics
-            questions = [k["keyword"] for k in kws if k["is_question"]]
-            f.write(f"- **Question Keywords**: {len(questions)}\n")
 
-            # Competitors
-            comps = competitor_data.get(c["name"], [])
-            f.write(f"- **Competitors Crawled**: {len(comps)}\n")
-            for comp in comps:
-                f.write(
-                    f"  - [{comp['title'] or comp['url']}]({comp['url']}) (Word count: {comp['word_count']})\n"
+    for cluster in saved_clusters:
+        c_name = cluster["name"]
+
+        kws = all_cluster_keywords.get(c_name, [])
+        comps = competitor_data.get(c_name, [])
+        gaps = content_gaps.get(c_name, [])
+
+        # --------------------------------------------------------
+        # Keyword data
+        # --------------------------------------------------------
+
+        keyword_data = []
+
+        for kw in kws:
+            keyword_data.append(
+                {
+                    "keyword": kw.get("keyword"),
+                    "volume": kw.get("volume"),
+                    "competition": kw.get("competition"),
+                    "competition_level": kw.get("competition_level"),
+                    "cpc": kw.get("cpc"),
+                    "intent": kw.get("intent"),
+                    "is_question": kw.get("is_question"),
+                }
+            )
+
+        # --------------------------------------------------------
+        # Competitor data
+        # --------------------------------------------------------
+
+        competitor_data_for_cluster = []
+
+        for comp in comps:
+            competitor_data_for_cluster.append(
+                {
+                    "url": comp.get("url"),
+                    "title": comp.get("title"),
+                    "h1s": comp.get("h1s", []),
+                    "headings": comp.get("headings", []),
+                    "questions": comp.get("questions", []),
+                    "word_count": comp.get("word_count", 0),
+                    "error": comp.get("error"),
+                }
+            )
+
+        # --------------------------------------------------------
+        # Content gaps / page opportunities
+        # --------------------------------------------------------
+
+        page_gap_data = []
+
+        for gap in gaps:
+            keyword_ideas = gap.get("keyword_ideas", [])
+
+            # Normalize priority
+            priority = str(
+                gap.get("priority", "medium")
+            ).lower()
+
+            # If your ContentGapAnalysis schema later contains
+            # "scope", this will use it.
+            # Otherwise default to page.
+            scope = str(
+                gap.get("scope", "page")
+            ).lower()
+
+            page_gap_data.append(
+                {
+                    "topic": gap.get("topic"),
+                    "priority": priority,
+                    "scope": scope,
+                    "reason": gap.get("reason"),
+                    "missing_format": gap.get("missing_format"),
+                    "keyword_ideas": keyword_ideas,
+                }
+            )
+
+        # --------------------------------------------------------
+        # Cluster-level page planning object
+        # --------------------------------------------------------
+
+        cluster_output = {
+            "name": c_name,
+            "description": cluster.get("description"),
+            "keywords": keyword_data,
+            "competitors": competitor_data_for_cluster,
+            "content_gaps": page_gap_data,
+            "summary": {
+                "total_keywords": len(kws),
+                "question_keywords": sum(
+                    1
+                    for kw in kws
+                    if kw.get("is_question")
+                ),
+                "competitors_crawled": len(comps),
+                "content_gaps": len(gaps),
+                "high_priority_gaps": sum(
+                    1
+                    for gap in gaps
+                    if str(
+                        gap.get("priority", "")
+                    ).lower()
+                    == "high"
+                ),
+                "page_level_opportunities": sum(
+                    1
+                    for gap in gaps
+                    if str(
+                        gap.get("scope", "page")
+                    ).lower()
+                    == "page"
+                ),
+                "section_level_opportunities": sum(
+                    1
+                    for gap in gaps
+                    if str(
+                        gap.get("scope", "page")
+                    ).lower()
+                    == "section"
+                ),
+            },
+        }
+
+        page_opportunities["clusters"].append(
+            cluster_output
+        )
+
+
+    # ------------------------------------------------------------
+    # Save machine-readable JSON
+    # ------------------------------------------------------------
+
+    with open(
+        page_opportunities_path,
+        "w",
+        encoding="utf-8",
+    ) as f:
+        json.dump(
+            page_opportunities,
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
+
+    print(
+        f"Page-planning data saved to: "
+        f"{page_opportunities_path}"
+    )
+
+
+    # ============================================================
+    # HUMAN-READABLE MARKDOWN REPORT
+    # ============================================================
+
+    with open(
+        report_path,
+        "w",
+        encoding="utf-8",
+    ) as f:
+
+        # --------------------------------------------------------
+        # Project Context
+        # --------------------------------------------------------
+
+        f.write("# SEO Niche & Keyword Research Report\n\n")
+
+        f.write("## Project Context\n")
+
+        f.write(
+            f"- **Core Topic**: "
+            f"{extraction.core_topic}\n"
+        )
+
+        f.write(
+            f"- **Target Audience**: "
+            f"{extraction.target_audience}\n"
+        )
+
+        f.write(
+            f"- **Site Goal**: "
+            f"{extraction.site_goal}\n"
+        )
+
+        f.write(
+            f"- **Geographic/Language Scope**: "
+            f"{extraction.geo_scope}\n"
+        )
+
+        f.write(
+            f"- **Constraints**: "
+            f"{extraction.constraints}\n\n"
+        )
+
+        # --------------------------------------------------------
+        # Overall summary
+        # --------------------------------------------------------
+
+        total_clusters = len(saved_clusters)
+
+        total_keywords = sum(
+            len(
+                all_cluster_keywords.get(
+                    c["name"],
+                    [],
                 )
-                comp_qs = comp.get("questions", [])
-                if comp_qs:
-                    f.write("    - *Top Competitor FAQ Questions*:\n")
-                    for q in comp_qs[:3]:
-                        f.write(f"      - {q}\n")
+            )
+            for c in saved_clusters
+        )
 
-            # Content Gaps
-            f.write(f"#### Identified Content Gaps:\n")
-            gaps = content_gaps.get(c["name"], [])
-            if gaps:
-                for gap in gaps:
-                    f.write(
-                        f"  - **{gap['topic']}** (Priority: {gap['priority'].upper()})\n"
+        total_competitors = sum(
+            len(
+                competitor_data.get(
+                    c["name"],
+                    [],
+                )
+            )
+            for c in saved_clusters
+        )
+
+        total_gaps = sum(
+            len(
+                content_gaps.get(
+                    c["name"],
+                    [],
+                )
+            )
+            for c in saved_clusters
+        )
+
+        total_high_priority_gaps = sum(
+            sum(
+                1
+                for gap in content_gaps.get(
+                    c["name"],
+                    [],
+                )
+                if str(
+                    gap.get("priority", "")
+                ).lower()
+                == "high"
+            )
+            for c in saved_clusters
+        )
+
+        f.write("## Research Summary\n")
+
+        f.write(
+            f"- **Clusters Analyzed**: "
+            f"{total_clusters}\n"
+        )
+
+        f.write(
+            f"- **Total Keywords**: "
+            f"{total_keywords}\n"
+        )
+
+        f.write(
+            f"- **Competitor Pages Crawled**: "
+            f"{total_competitors}\n"
+        )
+
+        f.write(
+            f"- **Content Gaps Identified**: "
+            f"{total_gaps}\n"
+        )
+
+        f.write(
+            f"- **High-Priority Gaps**: "
+            f"{total_high_priority_gaps}\n\n"
+        )
+
+        # --------------------------------------------------------
+        # Cluster details
+        # --------------------------------------------------------
+
+        f.write("## Topic Clusters\n\n")
+
+        for c in saved_clusters:
+
+            c_name = c["name"]
+
+            f.write(
+                f"### Cluster: {c_name}\n\n"
+            )
+
+            f.write(
+                f"- **Description**: "
+                f"{c['description']}\n"
+            )
+
+            kws = all_cluster_keywords.get(
+                c_name,
+                [],
+            )
+
+            f.write(
+                f"- **Total Keywords**: "
+                f"{len(kws)}\n"
+            )
+
+            questions = [
+                k["keyword"]
+                for k in kws
+                if k.get("is_question")
+            ]
+
+            f.write(
+                f"- **Question Keywords**: "
+                f"{len(questions)}\n"
+            )
+
+            comps = competitor_data.get(
+                c_name,
+                [],
+            )
+
+            f.write(
+                f"- **Competitors Crawled**: "
+                f"{len(comps)}\n\n"
+            )
+
+            # ====================================================
+            # KEYWORDS
+            # ====================================================
+
+            f.write("#### Keywords\n\n")
+
+            if kws:
+
+                f.write(
+                    "| Keyword | Volume | Competition | "
+                    "Level | CPC | Intent | Question |\n"
+                )
+
+                f.write(
+                    "|---|---:|---:|---|---:|---|---|\n"
+                )
+
+                for kw in kws:
+
+                    keyword = kw.get(
+                        "keyword",
+                        "",
                     )
-                    f.write(f"    - *Reason*: {gap['reason']}\n")
-                    f.write(f"    - *Recommended Format*: {gap['missing_format']}\n")
-                    f.write(
-                        f"    - *Target Keywords*: {', '.join(gap['keyword_ideas'])}\n"
+
+                    volume = kw.get(
+                        "volume"
                     )
+
+                    competition = kw.get(
+                        "competition"
+                    )
+
+                    competition_level = kw.get(
+                        "competition_level"
+                    )
+
+                    cpc = kw.get(
+                        "cpc"
+                    )
+
+                    intent = kw.get(
+                        "intent",
+                        "",
+                    )
+
+                    is_question = kw.get(
+                        "is_question",
+                        False,
+                    )
+
+                    f.write(
+                        f"| {keyword} "
+                        f"| {volume if volume is not None else '-'} "
+                        f"| {competition if competition is not None else '-'} "
+                        f"| {competition_level or '-'} "
+                        f"| {cpc if cpc is not None else '-'} "
+                        f"| {intent or '-'} "
+                        f"| {'Yes' if is_question else 'No'} |\n"
+                    )
+
             else:
-                f.write(f"  - No significant content gaps identified.\n")
-            f.write("\n" + "─" * 40 + "\n\n")
+                f.write(
+                    "No keywords available.\n"
+                )
 
-    print(f"Human-readable report saved to: {report_path}")
+            f.write("\n")
 
-    # --- STEP 10: CLI SUMMARY ---
+            # ====================================================
+            # QUESTION KEYWORDS
+            # ====================================================
+
+            if questions:
+
+                f.write(
+                    "#### Question Keywords\n\n"
+                )
+
+                for question in questions:
+                    f.write(
+                        f"- {question}\n"
+                    )
+
+                f.write("\n")
+
+            # ====================================================
+            # COMPETITORS
+            # ====================================================
+
+            f.write(
+                "#### Competitor Research\n\n"
+            )
+
+            if comps:
+
+                for index, comp in enumerate(
+                    comps,
+                    start=1,
+                ):
+
+                    title = (
+                        comp.get("title")
+                        or comp.get("url")
+                    )
+
+                    f.write(
+                        f"**{index}. "
+                        f"[{title}]"
+                        f"({comp.get('url')})**\n\n"
+                    )
+
+                    f.write(
+                        f"- **Word Count**: "
+                        f"{comp.get('word_count', 0)}\n"
+                    )
+
+                    h1s = comp.get(
+                        "h1s",
+                        [],
+                    )
+
+                    if h1s:
+
+                        f.write(
+                            "- **H1s**:\n"
+                        )
+
+                        for h1 in h1s:
+                            f.write(
+                                f"  - {h1}\n"
+                            )
+
+                    headings = comp.get(
+                        "headings",
+                        [],
+                    )
+
+                    if headings:
+
+                        f.write(
+                            "- **Content Structure**:\n"
+                        )
+
+                        # Keep report readable while preserving
+                        # the useful competitor structure.
+                        for heading in headings[:15]:
+
+                            tag = heading.get(
+                                "tag",
+                                "",
+                            )
+
+                            text = heading.get(
+                                "text",
+                                "",
+                            )
+
+                            f.write(
+                                f"  - "
+                                f"**{tag.upper()}** "
+                                f"{text}\n"
+                            )
+
+                    comp_qs = comp.get(
+                        "questions",
+                        [],
+                    )
+
+                    if comp_qs:
+
+                        f.write(
+                            "- **Competitor Questions**:\n"
+                        )
+
+                        for question in comp_qs:
+
+                            f.write(
+                                f"  - {question}\n"
+                            )
+
+                    f.write("\n")
+
+            else:
+
+                f.write(
+                    "No competitor pages were crawled "
+                    "for this cluster.\n\n"
+                )
+
+            # ====================================================
+            # CONTENT GAPS
+            # ====================================================
+
+            f.write(
+                "#### Identified Content Gaps\n\n"
+            )
+
+            gaps = content_gaps.get(
+                c_name,
+                [],
+            )
+
+            if gaps:
+
+                for gap in gaps:
+
+                    topic = gap.get(
+                        "topic",
+                        "Untitled",
+                    )
+
+                    priority = str(
+                        gap.get(
+                            "priority",
+                            "medium",
+                        )
+                    ).upper()
+
+                    scope = str(
+                        gap.get(
+                            "scope",
+                            "page",
+                        )
+                    ).lower()
+
+                    reason = gap.get(
+                        "reason",
+                        "",
+                    )
+
+                    missing_format = gap.get(
+                        "missing_format",
+                        "",
+                    )
+
+                    keyword_ideas = gap.get(
+                        "keyword_ideas",
+                        [],
+                    )
+
+                    f.write(
+                        f"**{topic}**\n\n"
+                    )
+
+                    f.write(
+                        f"- **Priority**: "
+                        f"{priority}\n"
+                    )
+
+                    f.write(
+                        f"- **Scope**: "
+                        f"{scope}\n"
+                    )
+
+                    f.write(
+                        f"- **Reason**: "
+                        f"{reason}\n"
+                    )
+
+                    f.write(
+                        f"- **Recommended Format**: "
+                        f"{missing_format}\n"
+                    )
+
+                    if keyword_ideas:
+
+                        f.write(
+                            "- **Target Keywords**:\n"
+                        )
+
+                        for keyword in keyword_ideas:
+
+                            f.write(
+                                f"  - {keyword}\n"
+                            )
+
+                    f.write("\n")
+
+            else:
+
+                f.write(
+                    "No significant content gaps identified.\n\n"
+                )
+
+            f.write(
+                "\n"
+                + "─" * 60
+                + "\n\n"
+            )
+
+
+    print(
+        f"Human-readable report saved to: "
+        f"{report_path}"
+    )
+
+    print(
+        f"Machine-readable page opportunities saved to: "
+        f"{page_opportunities_path}"
+    )
+
+
+    # ============================================================
+    # STEP 10: CLI SUMMARY
+    # ============================================================
+
     print_separator("═")
     print("                  RESEARCH COMPLETE                  ")
     print_separator("═")
 
-    total_clusters = len(saved_clusters)
-    total_kws = sum(len(all_cluster_keywords[c["name"]]) for c in saved_clusters)
 
-    # Collect top opportunities (e.g. priority content gaps or commercial/informational gaps)
-    opportunities = []
+    # ------------------------------------------------------------
+    # Overall metrics
+    # ------------------------------------------------------------
+
+    total_clusters = len(
+        saved_clusters
+    )
+
+    total_kws = sum(
+        len(
+            all_cluster_keywords.get(
+                c["name"],
+                [],
+            )
+        )
+        for c in saved_clusters
+    )
+
+    total_competitors = sum(
+        len(
+            competitor_data.get(
+                c["name"],
+                [],
+            )
+        )
+        for c in saved_clusters
+    )
+
+    total_gaps = sum(
+        len(
+            content_gaps.get(
+                c["name"],
+                [],
+            )
+        )
+        for c in saved_clusters
+    )
+
+    total_high_priority_gaps = sum(
+        sum(
+            1
+            for gap in content_gaps.get(
+                c["name"],
+                [],
+            )
+            if str(
+                gap.get("priority", "")
+            ).lower()
+            == "high"
+        )
+        for c in saved_clusters
+    )
+
+
+    print(
+        f"Clusters analyzed:        {total_clusters}"
+    )
+
+    print(
+        f"Total keywords:           {total_kws}"
+    )
+
+    print(
+        f"Competitors crawled:      {total_competitors}"
+    )
+
+    print(
+        f"Content gaps identified:  {total_gaps}"
+    )
+
+    print(
+        f"High-priority gaps:       {total_high_priority_gaps}"
+    )
+
+
+    # ------------------------------------------------------------
+    # Top page opportunities
+    # ------------------------------------------------------------
+
+    page_opportunity_list = []
+
     for c_name, gaps in content_gaps.items():
+
         for gap in gaps:
-            if gap["priority"].lower() == "high":
-                opportunities.append((c_name, gap["topic"], gap["missing_format"]))
 
-    print(f"Clusters analyzed:   {total_clusters}")
-    print(f"Total keywords:      {total_kws}")
+            priority = str(
+                gap.get(
+                    "priority",
+                    "medium",
+                )
+            ).lower()
 
-    print("\nTop High-Priority Content Gap Opportunities:")
-    if opportunities:
-        for idx, (c_name, topic, fmt) in enumerate(opportunities[:5]):
-            print(f"  {idx+1}. [{c_name}] {topic} ({fmt})")
+            scope = str(
+                gap.get(
+                    "scope",
+                    "page",
+                )
+            ).lower()
+
+            # Only treat explicit page-level gaps as page
+            # opportunities.
+            if scope != "page":
+                continue
+
+            if priority == "high":
+
+                page_opportunity_list.append(
+                    {
+                        "cluster": c_name,
+                        "topic": gap.get(
+                            "topic",
+                            "Untitled",
+                        ),
+                        "format": gap.get(
+                            "missing_format",
+                            "Unknown",
+                        ),
+                        "keywords": gap.get(
+                            "keyword_ideas",
+                            [],
+                        ),
+                        "reason": gap.get(
+                            "reason",
+                            "",
+                        ),
+                    }
+                )
+
+
+    print(
+        "\nTop High-Priority Page Opportunities:"
+    )
+
+    if page_opportunity_list:
+
+        for idx, opportunity in enumerate(
+            page_opportunity_list[:10],
+            start=1,
+        ):
+
+            print(
+                f"  {idx}. "
+                f"[{opportunity['cluster']}] "
+                f"{opportunity['topic']} "
+                f"({opportunity['format']})"
+            )
+
     else:
-        print("  None (all clusters covered or low priority gaps)")
 
-    # Suggest starting cluster (the one with the most high priority gaps)
-    cluster_gap_counts = {c["name"]: 0 for c in saved_clusters}
-    for c_name, gaps in content_gaps.items():
-        cluster_gap_counts[c_name] = sum(
-            1 for g in gaps if g["priority"].lower() == "high"
+        print(
+            "  None identified."
         )
 
-    recommended_cluster = max(cluster_gap_counts, key=cluster_gap_counts.get)
 
-    print(f"\nRecommended starting cluster: {recommended_cluster}")
+    # ------------------------------------------------------------
+    # Recommended starting cluster
+    # ------------------------------------------------------------
+
+    cluster_page_counts = {
+        c["name"]: 0
+        for c in saved_clusters
+    }
+
+    cluster_high_priority_counts = {
+        c["name"]: 0
+        for c in saved_clusters
+    }
+
+
+    for c_name, gaps in content_gaps.items():
+
+        for gap in gaps:
+
+            priority = str(
+                gap.get(
+                    "priority",
+                    "medium",
+                )
+            ).lower()
+
+            scope = str(
+                gap.get(
+                    "scope",
+                    "page",
+                )
+            ).lower()
+
+            if scope == "page":
+
+                cluster_page_counts[c_name] = (
+                    cluster_page_counts.get(
+                        c_name,
+                        0,
+                    )
+                    + 1
+                )
+
+                if priority == "high":
+
+                    cluster_high_priority_counts[c_name] = (
+                        cluster_high_priority_counts.get(
+                            c_name,
+                            0,
+                        )
+                        + 1
+                    )
+
+
+    # Only recommend a cluster that actually has page
+    # opportunities.
+    eligible_clusters = {
+        name: count
+        for name, count in cluster_page_counts.items()
+        if count > 0
+    }
+
+
+    if eligible_clusters:
+
+        # Prefer high-priority opportunities first.
+        recommended_cluster = max(
+            eligible_clusters,
+            key=lambda name: (
+                cluster_high_priority_counts.get(
+                    name,
+                    0,
+                ),
+                cluster_page_counts.get(
+                    name,
+                    0,
+                ),
+            ),
+        )
+
+        high_priority_count = (
+            cluster_high_priority_counts.get(
+                recommended_cluster,
+                0,
+            )
+        )
+
+        page_count = (
+            cluster_page_counts.get(
+                recommended_cluster,
+                0,
+            )
+        )
+
+        print(
+            f"\nRecommended starting cluster: "
+            f"{recommended_cluster}"
+        )
+
+        print(
+            "Reason: "
+            f"{high_priority_count} high-priority "
+            f"page opportunity/opportunities and "
+            f"{page_count} total page opportunity/"
+            f"opportunities were identified."
+        )
+
+    else:
+
+        print(
+            "\nRecommended starting cluster: "
+            "None"
+        )
+
+        print(
+            "Reason: No page-level content opportunities "
+            "were identified."
+        )
+
+
+    # ------------------------------------------------------------
+    # Output files
+    # ------------------------------------------------------------
+
     print(
-        f"Reason: This cluster has the highest density of identified high-priority content gaps ({cluster_gap_counts[recommended_cluster]})."
+        "\nOutput files:"
     )
+
+    print(
+        f"  • Human report: "
+        f"{report_path}"
+    )
+
+    print(
+        f"  • Page planning data: "
+        f"{page_opportunities_path}"
+    )
+
     print_separator("═")
