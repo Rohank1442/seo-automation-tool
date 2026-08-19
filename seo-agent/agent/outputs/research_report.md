@@ -1,117 +1,156 @@
 # SEO Niche & Keyword Research Report
 
 ## Project Context
-- **Core Topic**: Occasion-based fashion sharing and virtual try-on social platform
-- **Target Audience**: Fashion enthusiasts, event attendees, and everyday people seeking outfit inspiration for specific occasions and festivals
-- **Site Goal**: Build user growth, engagement, and brand authority for a fashion-focused social network
-- **Geographic/Language Scope**: Global English (with culturally diverse occasion support such as Diwali and date nights)
-- **Constraints**: None mentioned
+- **Core Topic**: Social fashion platform for occasion-based outfit recommendations and virtual try-ons
+- **Target Audience**: Fashion enthusiasts, everyday consumers seeking event-specific outfit inspiration, and lifestyle content creators
+- **Site Goal**: Build user engagement, grow a social media community, and attract organic search traffic for occasion and festival outfit queries
+- **Geographic/Language Scope**: Global English (with multicultural festival coverage such as Diwali)
+- **Constraints**: None explicitly mentioned
 
 ## Research Summary
 - **Clusters Analyzed**: 1
-- **Total Keywords**: 60
+- **Total Keywords**: 85
 - **Competitor Pages Crawled**: 0
-- **Content Gaps Identified**: 4
-- **High-Priority Gaps**: 3
+- **Content Gaps Identified**: 5
+- **High-Priority Gaps**: 4
 
 ## Topic Clusters
 
-### Cluster: Virtual Try-On Tech
+### Cluster: Festival and Concert Outfits
 
-- **Description**: Insights and user guides on using augmented reality and virtual fitting rooms to preview outfits digitally. (Popular searches: virtual try-on technology, virtual try on technology market, virtual try on technology in fashion)
-- **Total Keywords**: 60
-- **Question Keywords**: 22
+- **Description**: Inspiration and trend forecasts for music festivals, raves, themed parties, and seasonal cultural celebrations. (Popular searches: festival and concert outfits, what to wear to a festival, what to wear to a music festival)
+- **Total Keywords**: 85
+- **Question Keywords**: 36
 - **Competitors Crawled**: 0
 
 #### Keywords
 
 | Keyword | Volume | Competition | Level | CPC | Intent | Question |
 |---|---:|---:|---|---:|---|---|
-| look for apps in app store | - | - | - | - | informational | No |
-| see how clothes look on me app | - | - | - | - | commercial | No |
-| virtual designing clothes apps | - | - | - | - | commercial | No |
-| virtual clothes preview app | - | - | - | - | commercial | No |
-| where to buy clothes from online | - | - | - | - | transactional | Yes |
-| virtual try on clothes online ai | - | - | - | - | commercial | No |
-| design your own clothes virtually | - | - | - | - | informational | No |
-| how to get clothes | - | - | - | - | informational | Yes |
-| virtual clothing designer online free | - | - | - | - | commercial | No |
-| is preview app worth it | - | - | - | - | commercial | Yes |
-| best app for virtual meetings | - | - | - | - | commercial | No |
-| how to create clothes online | - | - | - | - | informational | Yes |
-| app to find clothes from picture | - | - | - | - | commercial | No |
-| what is a virtual fitting room | - | - | - | - | informational | Yes |
-| clothes design app with virtual try-on | - | - | - | - | commercial | No |
-| can you virtually try on clothes | - | - | - | - | informational | Yes |
-| best virtual fitting room apps | - | - | - | - | commercial | No |
-| virtual fitting room definition | - | - | - | - | informational | No |
-| ar outfit try on online | - | - | - | - | commercial | No |
-| try on clothes virtually online | - | - | - | - | commercial | No |
-| how to design clothes online for free | - | - | - | - | informational | Yes |
-| how to get clothes to sell online | - | - | - | - | informational | Yes |
-| virtual clothing design free | - | - | - | - | commercial | No |
-| app to find clothes from picture iphone | - | - | - | - | commercial | No |
-| which app is best for online clothes shopping | - | - | - | - | commercial | Yes |
-| who do i look like app store | - | - | - | - | navigational | Yes |
-| fitting furniture in a room virtual | - | - | - | - | commercial | No |
-| virtual designing clothes software | - | - | - | - | commercial | No |
-| virtual showroom furniture app | - | - | - | - | commercial | No |
-| virtual try-on tech | - | - | - | - | informational | No |
-| how you look at me | - | - | - | - | informational | No |
-| virtual dressing room app | - | - | - | - | commercial | No |
-| app to design room with vr | - | - | - | - | commercial | No |
-| try on clothes online virtual model | - | - | - | - | commercial | No |
-| what is ar clothing | - | - | - | - | informational | Yes |
-| which app is best for online dress shopping | - | - | - | - | commercial | Yes |
-| what does find my app look like | - | - | - | - | informational | Yes |
-| try on clothes virtually online free | - | - | - | - | commercial | No |
-| virtual try on clothes online free no sign up | - | - | - | - | transactional | No |
-| how to make clothes online | - | - | - | - | informational | Yes |
-| virtual try on clothes online free ai | - | - | - | - | commercial | No |
-| how to order clothing online | - | - | - | - | informational | Yes |
-| where to buy quality clothing online | - | - | - | - | commercial | Yes |
-| best virtual fitting room app | - | - | - | - | commercial | No |
-| virtual designing clothes online | - | - | - | - | commercial | No |
-| virtual model for clothes | - | - | - | - | commercial | No |
-| how it looks to me app | - | - | - | - | informational | No |
-| ara_outfit | - | - | - | - | navigational | No |
-| virtual try on clothes online a fitroom app editor | - | - | - | - | commercial | No |
-| how to design clothes online | - | - | - | - | informational | Yes |
-| how to try on clothes virtually online | - | - | - | - | informational | Yes |
-| app for decorating room with virtual reality | - | - | - | - | commercial | No |
-| best online clothing app for men | - | - | - | - | commercial | No |
-| best online clothing app for women | - | - | - | - | commercial | No |
-| virtual designing clothes tutorial | - | - | - | - | informational | No |
-| virtual fitting room for e-commerce | - | - | - | - | commercial | No |
-| how do i find clothes online | - | - | - | - | informational | Yes |
-| what is virtual try on | - | - | - | - | informational | Yes |
-| how to get free clothes online | - | - | - | - | informational | Yes |
-| how to try on clothes online | - | - | - | - | informational | Yes |
+| what to wear to a music festival over 40 | - | - | - | - | informational | Yes |
+| can you bring walkie talkies to a music festival | - | - | - | - | informational | Yes |
+| what is a rave outfit | - | - | - | - | informational | Yes |
+| day rave outfit ideas | - | - | - | - | commercial | No |
+| what do people wear to music festivals | - | - | - | - | informational | Yes |
+| best outfit ideas for concert | - | - | - | - | commercial | No |
+| girl rave outfit ideas | - | - | - | - | commercial | No |
+| concert outfit ideas for plus size women | - | - | - | - | commercial | No |
+| what to wear to crssd music festival | - | - | - | - | informational | Yes |
+| what wear to a music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas country | - | - | - | - | commercial | No |
+| concert outfit ideas winter | - | - | - | - | commercial | No |
+| what do you wear to a music concert | - | - | - | - | informational | Yes |
+| rave outfit ideas men | - | - | - | - | commercial | No |
+| what to wear to a outdoor music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas plus size | - | - | - | - | commercial | No |
+| cute rave outfit inspiration | - | - | - | - | commercial | No |
+| what to wear to a music festival | - | - | - | - | informational | Yes |
+| can you wear sandals to a music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas male summer | - | - | - | - | commercial | No |
+| trending holiday outfits 2026 | - | - | - | - | commercial | No |
+| concert outfit ideas for women over 40 | - | - | - | - | commercial | No |
+| what to wear to a beach music festival | - | - | - | - | informational | Yes |
+| what to wear to a country music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas men | - | - | - | - | commercial | No |
+| concert outfit ideas black women | - | - | - | - | commercial | No |
+| what to wear to a music festival guys | - | - | - | - | informational | Yes |
+| what do you bring to a music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas male winter | - | - | - | - | commercial | No |
+| what to bring to a music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas for women | - | - | - | - | commercial | No |
+| what do you wear to a country music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas female | - | - | - | - | commercial | No |
+| outfits for a rave | - | - | - | - | commercial | No |
+| trending festive outfits 2025 | - | - | - | - | commercial | No |
+| cute concert outfit ideas | - | - | - | - | commercial | No |
+| what to wear to a music festival in your 50s | - | - | - | - | informational | Yes |
+| festival and concert outfits | - | - | - | - | commercial | No |
+| music festival wear | - | - | - | - | commercial | No |
+| what to wear to a music festival when its cold | - | - | - | - | informational | Yes |
+| rave outfits for girls | - | - | - | - | commercial | No |
+| rave outfit ideas women | - | - | - | - | commercial | No |
+| what to wear to a music festival in the rain | - | - | - | - | informational | Yes |
+| what to wear to country music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas pinterest | - | - | - | - | navigational | No |
+| what to wear to a music festival 2026 | - | - | - | - | informational | Yes |
+| trending holiday outfits | - | - | - | - | commercial | No |
+| trending festival dress for women | - | - | - | - | commercial | No |
+| what shoes to wear to a music festival | - | - | - | - | informational | Yes |
+| concert outfit ideas black girl | - | - | - | - | commercial | No |
+| what do you wear to a music festival | - | - | - | - | informational | Yes |
+| rave outfit for women | - | - | - | - | commercial | No |
+| indoor concert outfit ideas | - | - | - | - | commercial | No |
+| trending holiday outfits 2025 | - | - | - | - | commercial | No |
+| trending holiday outfits for women | - | - | - | - | commercial | No |
+| concert outfit ideas for women over 50 | - | - | - | - | commercial | No |
+| cute edc outfit ideas | - | - | - | - | commercial | No |
+| cute rave outfit ideas | - | - | - | - | commercial | No |
+| night concert outfit ideas | - | - | - | - | commercial | No |
+| concert outfit ideas | - | - | - | - | commercial | No |
+| trending festival outfits for women | - | - | - | - | commercial | No |
+| what to wear to a music festival female over 50 | - | - | - | - | informational | Yes |
+| what to wear to a music festival over 50 | - | - | - | - | informational | Yes |
+| plus size rave outfit inspiration | - | - | - | - | commercial | No |
+| trending festival outfits | - | - | - | - | commercial | No |
+| popular festival outfits | - | - | - | - | commercial | No |
+| can you bring food to music festivals | - | - | - | - | informational | Yes |
+| what to wear to a country music festival guys | - | - | - | - | informational | Yes |
+| what to wear to a music festival female | - | - | - | - | informational | Yes |
+| best shoes to wear to a music festival | - | - | - | - | commercial | No |
+| what shoes do you wear to a music festival | - | - | - | - | informational | Yes |
+| what to wear to a music festival women | - | - | - | - | informational | Yes |
+| what to wear to a rock festival | - | - | - | - | informational | Yes |
+| rave outfits women ideas | - | - | - | - | commercial | No |
+| shoes to wear to a music festival | - | - | - | - | commercial | No |
+| what to wear to a music festival in your 40s | - | - | - | - | informational | Yes |
+| trending festival dress for girls | - | - | - | - | commercial | No |
+| can you bring chairs to a music festival | - | - | - | - | informational | Yes |
+| couple rave outfit ideas | - | - | - | - | commercial | No |
+| cute couple rave outfit ideas | - | - | - | - | commercial | No |
+| what should you bring to a music festival | - | - | - | - | informational | Yes |
+| what to wear to a festival | - | - | - | - | informational | Yes |
+| what to wear to a music festival plus size | - | - | - | - | informational | Yes |
+| concert outfit ideas women | - | - | - | - | commercial | No |
+| concert outfit ideas male | - | - | - | - | commercial | No |
 
 #### Question Keywords
 
-- where to buy clothes from online
-- how to get clothes
-- is preview app worth it
-- how to create clothes online
-- what is a virtual fitting room
-- can you virtually try on clothes
-- how to design clothes online for free
-- how to get clothes to sell online
-- which app is best for online clothes shopping
-- who do i look like app store
-- what is ar clothing
-- which app is best for online dress shopping
-- what does find my app look like
-- how to make clothes online
-- how to order clothing online
-- where to buy quality clothing online
-- how to design clothes online
-- how to try on clothes virtually online
-- how do i find clothes online
-- what is virtual try on
-- how to get free clothes online
-- how to try on clothes online
+- what to wear to a music festival over 40
+- can you bring walkie talkies to a music festival
+- what is a rave outfit
+- what do people wear to music festivals
+- what to wear to crssd music festival
+- what wear to a music festival
+- what do you wear to a music concert
+- what to wear to a outdoor music festival
+- what to wear to a music festival
+- can you wear sandals to a music festival
+- what to wear to a beach music festival
+- what to wear to a country music festival
+- what to wear to a music festival guys
+- what do you bring to a music festival
+- what to bring to a music festival
+- what do you wear to a country music festival
+- what to wear to a music festival in your 50s
+- what to wear to a music festival when its cold
+- what to wear to a music festival in the rain
+- what to wear to country music festival
+- what to wear to a music festival 2026
+- what shoes to wear to a music festival
+- what do you wear to a music festival
+- what to wear to a music festival female over 50
+- what to wear to a music festival over 50
+- can you bring food to music festivals
+- what to wear to a country music festival guys
+- what to wear to a music festival female
+- what shoes do you wear to a music festival
+- what to wear to a music festival women
+- what to wear to a rock festival
+- what to wear to a music festival in your 40s
+- can you bring chairs to a music festival
+- what should you bring to a music festival
+- what to wear to a festival
+- what to wear to a music festival plus size
 
 #### Competitor Research
 
@@ -119,63 +158,67 @@ No competitor pages were crawled for this cluster.
 
 #### Identified Content Gaps
 
-**AI & AR Virtual Try-On Apps and Online Fitting Rooms**
+**Age-Inclusive Festival Style (40s, 50s+)**
 
 - **Priority**: HIGH
 - **Scope**: page
-- **Reason**: High-intent commercial queries around AI/AR try-on capabilities lack comprehensive, unbiased app comparison guides and interactive web previews without requiring sign-ups.
-- **Recommended Format**: Interactive Comparison List & Real-Time App Showcase
+- **Reason**: Competitor coverage heavily favors Gen Z and young demographics, leaving a major void for mature festival-goers looking for elevated, comfortable, and trendy age-appropriate styling.
+- **Recommended Format**: Definitive Style Guide & Interactive Virtual Try-On Showcase
 - **Target Keywords**:
-  - virtual try on clothes online ai
-  - see how clothes look on me app
-  - virtual clothes preview app
-  - ar outfit try on online
-  - try on clothes virtually online
-  - virtual dressing room app
-  - try on clothes online virtual model
-  - try on clothes virtually online free
-  - virtual try on clothes online free no sign up
-  - best virtual fitting room apps
+  - what to wear to a music festival over 40
+  - concert outfit ideas for women over 40
+  - what to wear to a music festival in your 50s
 
-**Visual Search and Photo-Based Clothing Finder Tools**
+**Men's Festival and Concert Outfits (Seasonal & Genre-Specific)**
 
 - **Priority**: HIGH
 - **Scope**: page
-- **Reason**: Users are searching for practical solutions to match inspiration photos to real buyable outfits, presenting a direct hook for occasion-based outfit discovery features.
-- **Recommended Format**: Step-by-Step How-To Guide with Video Walkthroughs
+- **Reason**: Men's fashion is consistently neglected in generic competitor listicles, particularly for cold weather concerts, techno/raves, and summer festivals.
+- **Recommended Format**: Seasonal Visual Lookbook & Layering Guide
 - **Target Keywords**:
-  - app to find clothes from picture
-  - app to find clothes from picture iphone
+  - concert outfit ideas male summer
+  - concert outfit ideas male winter
+  - concert outfit ideas men
+  - what to wear to a music festival guys
+  - rave outfit ideas men
 
-**Virtual Clothing Design and Customization Apps**
+**Practical Logistics, Gear Rules & Footwear Safety**
 
 - **Priority**: MEDIUM
 - **Scope**: page
-- **Reason**: Creation and design queries represent an emerging niche intersection between 3D fashion design and virtual try-on technology that lacks centralized resources.
-- **Recommended Format**: Definitive Software Roundup & Creator Tutorial
+- **Reason**: Competitors treat festival fashion in isolation without addressing functional constraints like footwear safety, security restrictions, venue policy FAQs, or survival gear.
+- **Recommended Format**: Interactive Festival Survival Checklist with Q&A Answer Blocks
 - **Target Keywords**:
-  - virtual designing clothes apps
-  - design your own clothes virtually
-  - virtual clothing designer online free
-  - clothes design app with virtual try-on
-  - virtual designing clothes software
-  - virtual clothing design free
-  - how to create clothes online
-  - how to design clothes online for free
-  - how to make clothes online
+  - can you bring walkie talkies to a music festival
+  - can you wear sandals to a music festival
+  - what do you bring to a music festival
+  - what to bring to a music festival
+  - what to wear to a music festival when its cold
 
-**Fundamentals of AR Clothing & Virtual Fitting Technology**
+**Niche Micro-Genres & Specific Festival Dress Codes (CRSSD, Beach, Country, Day Raves)**
 
 - **Priority**: HIGH
 - **Scope**: page
-- **Reason**: Informational search intent requires featured-snippet-optimized content answering fundamental definitions and capabilities of modern AR/AI virtual fitting rooms.
-- **Recommended Format**: Definitional Explainer Guide with Interactive FAQs
+- **Reason**: Broad festival listicles fail to capture specific subculture aesthetics, such as house/techno minimalism for CRSSD, coastal music festivals, or country concert themes.
+- **Recommended Format**: Event-Specific Capsule Wardrobe Guides
 - **Target Keywords**:
-  - what is a virtual fitting room
-  - can you virtually try on clothes
-  - virtual fitting room definition
-  - virtual-try-on tech
-  - what is ar clothing
+  - what to wear to crssd music festival
+  - what to wear to a beach music festival
+  - concert outfit ideas country
+  - what to wear to a country music festival
+  - day rave outfit ideas
+  - what is a rave outfit
+
+**Diverse & Inclusive Outfit Inspiration (Plus-Size & Black Women)**
+
+- **Priority**: HIGH
+- **Scope**: page
+- **Reason**: Standard competitor pages lack representation and tailored fit tips for plus-size fashion lovers and Black women seeking trendy, event-ready looks.
+- **Recommended Format**: Curated Body-Inclusive Lookbook with Fit Recommendations
+- **Target Keywords**:
+  - concert outfit ideas for plus size women
+  - concert outfit ideas plus size
+  - concert outfit ideas black women
 
 
 ────────────────────────────────────────────────────────────

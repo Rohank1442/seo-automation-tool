@@ -1,9 +1,8 @@
-import json
 import re
 import requests
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from core.config import SERPAPI_API_KEY, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD
 
 # Standard headers to mimic a browser
