@@ -478,6 +478,9 @@ def run_research_phase():
         kw_sample = [
             {
                 "keyword": kw["keyword"],
+                "volume": kw.get("volume"),
+                "competition": kw.get("competition"),
+                "competition_level": kw.get("competition_level"),
                 "intent": kw["intent"],
                 "is_question": kw["is_question"],
             }

@@ -67,8 +67,10 @@ def get_competitor_urls(query: str, max_results: int = 5) -> List[str]:
             results = ddgs.text(query, max_results=max_results)
             print(f"DuckDuckGo results for '{query}': {results}")
             for r in results:
-                if "link" in r:
-                    urls.append(r["link"])
+                link = r.get("href") or r.get("link")
+
+                if link:
+                    urls.append(link)
         print(f"Filtered URLs for '{query}': {urls}")
         return urls[:max_results]
     except Exception as e:
