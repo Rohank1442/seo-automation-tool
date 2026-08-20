@@ -6,12 +6,11 @@ from typing import List, Dict, Any
 from pydantic import BaseModel
 
 from core.config import validate_config, GEMINI_API_KEY
-from core.llm import generate_json, generate_text
+from core.llm import generate_json
 from core.db import (
     create_project,
     update_project,
     create_clusters,
-    delete_clusters_for_project,
     save_keywords,
 )
 from core.scraper import (
@@ -29,12 +28,10 @@ from prompts.v01_prompts import (
     BatchKeywordClassification,
     ContentGapAnalysisResponse,
     ClusterSeedsResponse,
-    PaaQuestionsResponse,
     EXTRACTION_SYSTEM_PROMPT,
     FOLLOWUP_SYSTEM_PROMPT,
     CLUSTER_GENERATION_SYSTEM_PROMPT,
     CLUSTER_SEEDS_SYSTEM_PROMPT,
-    PAA_SIMULATION_SYSTEM_PROMPT,
     INTENT_CLASSIFICATION_SYSTEM_PROMPT,
     GAP_ANALYSIS_SYSTEM_PROMPT,
 )
