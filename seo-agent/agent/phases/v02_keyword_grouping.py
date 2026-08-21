@@ -729,8 +729,8 @@ def run_v02_keyword_grouping() -> Dict[str, Any]:
     )
 
     total_keywords = sum(
-        len(cluster.get("keywords", []))
-        for cluster in result["clusters"]
+        len(extract_cluster_keywords(cluster))
+        for cluster in research.get("clusters", [])
     )
 
     print(
