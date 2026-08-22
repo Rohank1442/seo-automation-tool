@@ -198,6 +198,11 @@ def validate_audits(
         for audit in response.audits
     }
 
+    if len(actual_ids) != len(response.audits):
+        raise ValueError(
+            "Gemini returned duplicate audits for one or more groups."
+        )
+
     missing = expected_ids - actual_ids
 
     if missing:

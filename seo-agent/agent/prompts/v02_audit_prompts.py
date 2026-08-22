@@ -110,7 +110,27 @@ IMPORTANT:
 11. Prefer fewer pages only when the combined page would genuinely
     satisfy the searcher.
 12. If a group contains multiple distinct user goals, recommend split.
-13. Use confidence between 0 and 1.
+13. Evaluate whether the keywords would reasonably be satisfied by
+    the same type of SERP result and page.
+
+14. Do not assume that keywords belong together merely because they
+    describe the same general subject.
+
+15. If keywords have the same broad topic but different dominant
+    user goals (for example: learning, finding a tool, comparing
+    products, navigating to a specific product, or performing an
+    action), flag the group for review or split it.
+
+16. A navigational keyword referring to a specific brand, product,
+    or named tool should generally not be grouped with generic
+    discovery keywords.
+
+17. When deciding between "review" and "split", use "split" when
+    combining the keywords would force one page to serve two clearly
+    different primary user goals.
+
+18. Do not split keywords merely because one is a longer variation
+    of another if the underlying user intent remains the same.
 
 STATUS:
 
