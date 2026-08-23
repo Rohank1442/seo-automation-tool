@@ -20,6 +20,33 @@ from pydantic import BaseModel, Field
 # ============================================================
 
 
+class FinalKeywordGroup(BaseModel):
+    """
+    Represents one final page group produced when a proposed
+    semantic group needs to be split.
+    """
+
+    group_id: str = Field(
+        description="Unique ID for the final page group."
+    )
+
+    primary_keyword: str = Field(
+        description="Primary keyword targeted by this page."
+    )
+
+    secondary_keywords: List[str] = Field(
+        default_factory=list,
+        description="Closely related keywords targeted by the page."
+    )
+
+    page_type: str = Field(
+        description="Recommended page type."
+    )
+
+    reasoning: str = Field(
+        description="Why these keywords belong on one page."
+    )
+
 class KeywordPageGroup(BaseModel):
     """
     Represents one group of keywords that can realistically be

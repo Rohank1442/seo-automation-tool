@@ -1,26 +1,45 @@
 """
-v0.2 — Site Architecture Planner
+v0.2 — Final Site Architecture Planner.
 
-This module converts the structured research produced by v0.1
-into a machine-readable SEO site architecture.
+This module converts the research and semantic keyword analysis
+produced by v0.1 and v0.2 into the final SEO site architecture.
 
-Responsibilities:
-1. Load v0.1 page opportunities.
-2. Load the v0.2 SiteProfile.
-3. Analyze clusters, keywords, and content gaps.
-4. Create SEO page candidates.
-5. Assign keywords to pages.
-6. Establish a logical parent/child hierarchy.
-7. Save the resulting architecture.
+Pipeline:
 
-This module does NOT generate page content and does NOT create
-the frontend. It only decides what pages the website should have.
+    v0.1 research
+          ↓
+    SiteProfile
+          ↓
+    semantic keyword groups
+          ↓
+    keyword group audit
+          ↓
+    resolve split groups
+          ↓
+    final page architecture
+          ↓
+    validation
+          ↓
+    site_architecture.json
+
+Important:
+
+- This module is designed for a brand-new website.
+- It does NOT require an existing website.
+- It does NOT generate page content.
+- It does NOT build the frontend.
+- It decides which pages the future website should contain.
 """
+
 
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
+from pydantic import BaseModel, Field
+
+from core.llm import generate_json
 
 
 # ============================================================
@@ -42,6 +61,16 @@ SITE_PROFILE_PATH = os.path.join(
     "site_profile.json",
 )
 
+KEYWORD_GROUPS_PATH = os.path.join(
+    V02_OUTPUT_DIR,
+    "keyword_groups.json",
+)
+
+GROUP_AUDIT_PATH = os.path.join(
+    V02_OUTPUT_DIR,
+    "keyword_group_audit.json",
+)
+
 ARCHITECTURE_PATH = os.path.join(
     V02_OUTPUT_DIR,
     "site_architecture.json",
@@ -49,12 +78,97 @@ ARCHITECTURE_PATH = os.path.join(
 
 
 # ============================================================
+# PYDANTIC SCHEMAS
+# ============================================================
+
+
+class FinalKeywordGroup(BaseModel):
+    """
+    Represents one final page group produced when a proposed
+    semantic group needs to be split into multiple pages.
+    """
+
+    group_id: str = Field(
+        description="Unique ID for the final page group."
+    )
+
+    primary_keyword: str = Field(
+        description="Primary keyword targeted by this page."
+    )
+
+    secondary_keywords: List[str] = Field(
+        default_factory=list,
+        description="Closely related keywords targeted by the page."
+    )
+
+    page_type: str = Field(
+        description="Recommended page type."
+    )
+
+    reasoning: str = Field(
+        description="Why these keywords belong on one page."
+    )
+
+
+class FinalKeywordGroupResponse(BaseModel):
+    """
+    Structured response containing the final groups after
+    resolving a group marked as split.
+    """
+
+    groups: List[FinalKeywordGroup] = Field(
+        default_factory=list
+    )
+
+
+# ============================================================
+# PROMPT
+# ============================================================
+
+SPLIT_GROUP_SYSTEM_PROMPT = """
+You are an expert SEO information architect.
+
+A previous semantic keyword grouping system created a keyword
+group and an audit system determined that the group should be
+SPLIT because it contains multiple distinct search intents.
+
+Your job is to divide ONLY that supplied group into coherent
+final page groups.
+
+Rules:
+
+1. Do not invent keywords.
+2. Every supplied keyword must belong to exactly one final group.
+3. Do not silently discard keywords.
+4. Keywords with the same underlying search intent should stay
+   together.
+5. Different user goals should become different pages.
+6. Search intent matters more than wording similarity.
+7. Do not create a separate page merely because a keyword is
+   longer or shorter.
+8. Each final group must represent one clear page/searcher
+   expectation.
+9. Use the original keywords exactly as supplied.
+10. Choose one primary keyword per final group.
+11. The primary keyword must come from the supplied keywords.
+12. Secondary keywords must also come from the supplied keywords.
+13. Keep the number of pages as small as reasonably possible while
+    preserving distinct search intent.
+14. Do not create a page solely for a weak isolated variation unless
+    its search intent is genuinely different.
+"""
+
+
+# ============================================================
 # FILE HELPERS
 # ============================================================
 
-def load_json_file(path: str) -> Dict[str, Any]:
+
+def load_json_file(
+    path: str,
+) -> Dict[str, Any]:
     """
-    Load a JSON file and return its parsed dictionary.
+    Load a JSON object from disk.
 
     Args:
         path:
@@ -65,10 +179,10 @@ def load_json_file(path: str) -> Dict[str, Any]:
 
     Raises:
         FileNotFoundError:
-            If the requested file does not exist.
+            If the file does not exist.
 
         ValueError:
-            If the file does not contain a valid JSON object.
+            If the file does not contain a JSON object.
     """
 
     if not os.path.exists(path):
@@ -97,46 +211,58 @@ def load_json_file(path: str) -> Dict[str, Any]:
     return data
 
 
-def load_v01_research() -> Dict[str, Any]:
+def save_json_file(
+    path: str,
+    data: Dict[str, Any],
+) -> None:
     """
-    Load the page opportunity data generated by v0.1.
+    Save a JSON object to disk.
+
+    Args:
+        path:
+            Destination file path.
+
+        data:
+            Dictionary to serialize.
     """
 
-    return load_json_file(
-        V01_OUTPUT_PATH
-    )
+    directory = os.path.dirname(path)
 
+    if directory:
+        os.makedirs(
+            directory,
+            exist_ok=True,
+        )
 
-def load_site_profile() -> Dict[str, Any]:
-    """
-    Load the SiteProfile generated by the first v0.2 stage.
-    """
-
-    return load_json_file(
-        SITE_PROFILE_PATH
-    )
+    with open(
+        path,
+        "w",
+        encoding="utf-8",
+    ) as file:
+        json.dump(
+            data,
+            file,
+            indent=2,
+            ensure_ascii=False,
+        )
 
 
 # ============================================================
 # SLUGGING
 # ============================================================
 
-def slugify(value: str) -> str:
+
+def slugify(
+    value: str,
+) -> str:
     """
     Convert human-readable text into a URL-safe slug.
 
     Example:
 
-        "Festival and Concert Outfits"
+        "What Is Virtual Try On"
         ->
-        "festival-and-concert-outfits"
-
-    Args:
-        value:
-            Text to convert.
-
-    Returns:
-        URL-safe lowercase slug.
+        "what-is-virtual-try-on"
     """
 
     value = value.lower().strip()
@@ -163,16 +289,17 @@ def slugify(value: str) -> str:
 
 
 # ============================================================
-# KEYWORD NORMALIZATION
+# NORMALIZATION
 # ============================================================
+
 
 def normalize_keyword(
     keyword: str,
 ) -> str:
     """
-    Normalize a keyword for comparison.
+    Normalize keyword text for comparisons.
 
-    This helps prevent duplicate keyword mappings caused by
+    This prevents duplicate detection from being affected by
     capitalization or whitespace differences.
     """
 
@@ -183,135 +310,145 @@ def normalize_keyword(
     )
 
 
-def extract_cluster_keywords(
-    cluster: Dict[str, Any],
-) -> List[Dict[str, Any]]:
-    """
-    Extract keyword records from a v0.1 cluster.
+# ============================================================
+# DATA LOADERS
+# ============================================================
 
-    The function tolerates missing optional fields because v0.1
-    may contain keyword records with different metric availability.
+
+def load_v01_research() -> Dict[str, Any]:
+    """
+    Load the keyword/page opportunity research produced by v0.1.
     """
 
-    keywords = cluster.get(
-        "keywords",
-        [],
+    return load_json_file(
+        V01_OUTPUT_PATH
     )
 
-    if not isinstance(
-        keywords,
-        list,
+
+def load_site_profile() -> Dict[str, Any]:
+    """
+    Load the SiteProfile produced during the v0.2 foundation stage.
+    """
+
+    return load_json_file(
+        SITE_PROFILE_PATH
+    )
+
+
+def load_keyword_groups() -> Dict[str, Any]:
+    """
+    Load the semantic keyword groups produced by v0.2 grouping.
+    """
+
+    return load_json_file(
+        KEYWORD_GROUPS_PATH
+    )
+
+
+def load_group_audit() -> Dict[str, Any]:
+    """
+    Load the keyword group audit produced by the audit stage.
+    """
+
+    return load_json_file(
+        GROUP_AUDIT_PATH
+    )
+
+
+# ============================================================
+# V0.1 KEYWORD LOOKUP
+# ============================================================
+
+
+def build_keyword_lookup(
+    research: Dict[str, Any],
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Build a normalized keyword lookup from v0.1 research.
+
+    This lets the architecture stage recover metrics such as
+    volume, competition, and intent for grouped keywords.
+    """
+
+    lookup: Dict[str, Dict[str, Any]] = {}
+
+    for cluster in research.get(
+        "clusters",
+        [],
     ):
-        return []
-
-    result = []
-
-    for item in keywords:
-        if isinstance(
-            item,
-            str,
-        ):
-            result.append(
-                {
-                    "keyword": item,
-                }
-            )
-
-        elif isinstance(
-            item,
+        if not isinstance(
+            cluster,
             dict,
         ):
-            keyword = item.get(
-                "keyword"
-            )
+            continue
 
-            if keyword:
-                result.append(
-                    item
+        for item in cluster.get(
+            "keywords",
+            [],
+        ):
+            if isinstance(
+                item,
+                str,
+            ):
+                keyword = item
+                data = {
+                    "keyword": item
+                }
+
+            elif isinstance(
+                item,
+                dict,
+            ):
+                keyword = item.get(
+                    "keyword"
                 )
+                data = item
 
-    return result
+            else:
+                continue
 
+            if not keyword:
+                continue
 
-# ============================================================
-# PAGE TYPE INFERENCE
-# ============================================================
+            lookup[
+                normalize_keyword(
+                    str(keyword)
+                )
+            ] = data
 
-def infer_page_type(
-    keyword: str,
-    cluster: Dict[str, Any],
-) -> str:
-    """
-    Infer the most appropriate SEO page type for a keyword.
-
-    This is intentionally conservative.
-
-    The current implementation recognizes common informational
-    and category-style patterns. More advanced page-type reasoning
-    can later be delegated to the LLM.
-    """
-
-    normalized = normalize_keyword(
-        keyword
-    )
-
-    question_starters = (
-        "what ",
-        "how ",
-        "why ",
-        "when ",
-        "where ",
-        "which ",
-        "can ",
-        "should ",
-    )
-
-    if normalized.startswith(
-        question_starters
-    ):
-        return "guide"
-
-    informational_terms = [
-        "ideas",
-        "guide",
-        "tips",
-        "inspiration",
-        "how to",
-        "what to wear",
-        "examples",
-    ]
-
-    for term in informational_terms:
-        if term in normalized:
-            return "guide"
-
-    return "category"
+    return lookup
 
 
 # ============================================================
 # PRIORITY
 # ============================================================
 
+
 def determine_page_priority(
-    keyword_data: Dict[str, Any],
+    primary_keyword: str,
+    keyword_lookup: Dict[str, Dict[str, Any]],
 ) -> str:
     """
-    Determine a basic page priority using available v0.1 metrics.
+    Determine page priority using available v0.1 keyword metrics.
 
-    Priority is deliberately conservative.
-
-    If volume information is unavailable, the page receives
-    medium priority rather than making an unsupported assumption.
+    The function remains conservative when metrics are unavailable.
     """
 
-    volume = keyword_data.get(
+    data = keyword_lookup.get(
+        normalize_keyword(
+            primary_keyword
+        ),
+        {},
+    )
+
+    volume = data.get(
         "volume"
     )
 
     competition_level = str(
-        keyword_data.get(
+        data.get(
             "competition_level",
-            ""
+            "",
         )
     ).lower()
 
@@ -335,42 +472,32 @@ def determine_page_priority(
 
 
 # ============================================================
-# PAGE CREATION
+# CLUSTER ROOT PAGE
 # ============================================================
 
+
 def create_cluster_root_page(
-    cluster: Dict[str, Any],
+    cluster_name: str,
 ) -> Dict[str, Any]:
     """
-    Create the root SEO page representing a topic cluster.
+    Create the root page for a topic cluster.
 
-    Example:
-
-        Festival and Concert Outfits
-
-        becomes
-
-        /festival-and-concert-outfits/
+    The website is assumed to be brand new, so this page is
+    planned as part of the future site rather than representing
+    an existing URL.
     """
 
-    name = str(
-        cluster.get(
-            "name",
-            ""
-        )
-    ).strip()
-
     slug = slugify(
-        name
+        cluster_name
     )
 
     return {
         "id": f"cluster:{slug}",
-        "title": name,
+        "title": cluster_name,
         "slug": slug,
         "url": f"/{slug}/",
         "page_type": "cluster",
-        "cluster": name,
+        "cluster": cluster_name,
         "parent_page_id": None,
         "primary_keyword": None,
         "secondary_keywords": [],
@@ -381,91 +508,64 @@ def create_cluster_root_page(
     }
 
 
-def create_keyword_page(
-    keyword_data: Dict[str, Any],
-    cluster: Dict[str, Any],
-    parent_page_id: str,
-) -> Dict[str, Any]:
-    """
-    Create an SEO page candidate from a keyword.
-
-    Each page initially receives one primary keyword.
-
-    Later we will add semantic keyword grouping so that multiple
-    keywords with the same search intent share a single page.
-    """
-
-    keyword = str(
-        keyword_data.get(
-            "keyword",
-            ""
-        )
-    ).strip()
-
-    slug = slugify(
-        keyword
-    )
-
-    cluster_name = str(
-        cluster.get(
-            "name",
-            ""
-        )
-    ).strip()
-
-    page_type = infer_page_type(
-        keyword,
-        cluster,
-    )
-
-    return {
-        "id": f"keyword:{slug}",
-        "title": keyword.title(),
-        "slug": slug,
-        "url": f"/{slug}/",
-        "page_type": page_type,
-        "cluster": cluster_name,
-        "parent_page_id": parent_page_id,
-        "primary_keyword": keyword,
-        "secondary_keywords": [],
-        "intent": keyword_data.get(
-            "intent"
-        ),
-        "priority": determine_page_priority(
-            keyword_data
-        ),
-        "indexable": True,
-        "content_status": "planned",
-    }
-
-
 # ============================================================
-# KEYWORD DEDUPLICATION
+# GROUP HELPERS
 # ============================================================
 
-def deduplicate_keywords(
-    keywords: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """
-    Remove duplicate keyword records.
 
-    Duplicate detection is based on normalized keyword text.
+def collect_group_keywords(
+    group: Dict[str, Any],
+) -> List[str]:
     """
+    Collect every keyword explicitly assigned to a semantic group.
+
+    The primary keyword and secondary keywords are combined with
+    the detailed keyword records, then duplicates are removed.
+    """
+
+    keywords: List[str] = []
+
+    primary = group.get(
+        "primary_keyword"
+    )
+
+    if primary:
+        keywords.append(
+            str(primary)
+        )
+
+    for keyword in group.get(
+        "secondary_keywords",
+        [],
+    ):
+        if keyword:
+            keywords.append(
+                str(keyword)
+            )
+
+    for item in group.get(
+        "keywords",
+        [],
+    ):
+        if isinstance(
+            item,
+            dict,
+        ):
+            keyword = item.get(
+                "keyword"
+            )
+
+            if keyword:
+                keywords.append(
+                    str(keyword)
+                )
 
     seen = set()
+    result = []
 
-    unique = []
-
-    for item in keywords:
-        keyword = item.get(
-            "keyword"
-        )
-
-        if not keyword:
-            continue
-
+    for keyword in keywords:
         normalized = normalize_keyword(
-            str(keyword)
+            keyword
         )
 
         if normalized in seen:
@@ -475,69 +575,454 @@ def deduplicate_keywords(
             normalized
         )
 
-        unique.append(
-            item
+        result.append(
+            keyword
         )
 
-    return unique
+    return result
+
+
+def build_audit_lookup(
+    audit_data: Dict[str, Any],
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Create a lookup from group ID to its audit result.
+    """
+
+    lookup: Dict[str, Dict[str, Any]] = {}
+
+    for cluster in audit_data.get(
+        "clusters",
+        [],
+    ):
+        if not isinstance(
+            cluster,
+            dict,
+        ):
+            continue
+
+        for audit in cluster.get(
+            "audits",
+            [],
+        ):
+            if not isinstance(
+                audit,
+                dict,
+            ):
+                continue
+
+            group_id = audit.get(
+                "group_id"
+            )
+
+            if group_id:
+                lookup[
+                    group_id
+                ] = audit
+
+    return lookup
 
 
 # ============================================================
-# ARCHITECTURE GENERATION
+# SPLIT GROUP RESOLUTION
 # ============================================================
 
-def build_cluster_architecture(
-    cluster: Dict[str, Any],
+
+def build_split_group_prompt(
+    cluster_name: str,
+    group: Dict[str, Any],
+    audit: Dict[str, Any],
+) -> str:
+    """
+    Build the Gemini prompt used to split a group that failed
+    the semantic audit.
+    """
+
+    payload = {
+        "cluster": cluster_name,
+        "group": {
+            "group_id": group.get(
+                "group_id"
+            ),
+            "primary_keyword": group.get(
+                "primary_keyword"
+            ),
+            "secondary_keywords": group.get(
+                "secondary_keywords",
+                [],
+            ),
+            "page_type": group.get(
+                "page_type"
+            ),
+            "keywords": [
+                item.get(
+                    "keyword"
+                )
+                for item in group.get(
+                    "keywords",
+                    []
+                )
+                if isinstance(
+                    item,
+                    dict,
+                )
+                and item.get(
+                    "keyword"
+                )
+            ],
+        },
+        "audit": {
+            "status": audit.get(
+                "status"
+            ),
+            "confidence": audit.get(
+                "confidence"
+            ),
+            "potential_outliers": audit.get(
+                "potential_outliers",
+                [],
+            ),
+            "issues": audit.get(
+                "issues",
+                [],
+            ),
+            "recommendation": audit.get(
+                "recommendation"
+            ),
+        },
+    }
+
+    return (
+        "Split the following audited SEO keyword group "
+        "into its final page groups.\n\n"
+        f"{json.dumps(payload, indent=2)}"
+    )
+
+
+def validate_split_groups(
+    original_group: Dict[str, Any],
+    response: FinalKeywordGroupResponse,
+) -> None:
+    """
+    Validate the result of Gemini's split operation.
+
+    Every original keyword must appear exactly once across the
+    final groups.
+    """
+
+    original_keywords = {
+        normalize_keyword(keyword)
+        for keyword in collect_group_keywords(
+            original_group
+        )
+    }
+
+    assigned_keywords: List[str] = []
+
+    for group in response.groups:
+        assigned_keywords.append(
+            normalize_keyword(
+                group.primary_keyword
+            )
+        )
+
+        for keyword in group.secondary_keywords:
+            assigned_keywords.append(
+                normalize_keyword(
+                    keyword
+                )
+            )
+
+    assigned_set = set(
+        assigned_keywords
+    )
+
+    missing = (
+        original_keywords
+        - assigned_set
+    )
+
+    unknown = (
+        assigned_set
+        - original_keywords
+    )
+
+    if missing:
+        raise ValueError(
+            "Split operation lost keywords: "
+            + ", ".join(
+                sorted(missing)
+            )
+        )
+
+    if unknown:
+        raise ValueError(
+            "Split operation invented keywords: "
+            + ", ".join(
+                sorted(unknown)
+            )
+        )
+
+    if len(assigned_keywords) != len(
+        original_keywords
+    ):
+        raise ValueError(
+            "Split operation assigned one or more keywords "
+            "more than once."
+        )
+
+    if not response.groups:
+        raise ValueError(
+            "Split operation returned no final groups."
+        )
+
+
+def resolve_split_group(
+    cluster_name: str,
+    group: Dict[str, Any],
+    audit: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    """
+    Ask Gemini to split a group that the audit stage marked as
+    requiring multiple pages.
+
+    Returns:
+        List of final semantic page groups.
+    """
+
+    prompt = build_split_group_prompt(
+        cluster_name,
+        group,
+        audit,
+    )
+
+    response = generate_json(
+        prompt=prompt,
+        response_schema=FinalKeywordGroupResponse,
+        system_instruction=SPLIT_GROUP_SYSTEM_PROMPT,
+    )
+
+    validate_split_groups(
+        group,
+        response,
+    )
+
+    return [
+        item.model_dump()
+        for item in response.groups
+    ]
+
+
+# ============================================================
+# FINAL PAGE CREATION
+# ============================================================
+
+
+def create_final_page(
+    group: Dict[str, Any],
+    cluster_name: str,
+    parent_page_id: str,
+    audit: Dict[str, Any],
+    keyword_lookup: Dict[str, Dict[str, Any]],
 ) -> Dict[str, Any]:
     """
-    Build the page hierarchy for one topic cluster.
+    Create one final page from one validated semantic keyword group.
+    """
 
-    The initial hierarchy is:
+    primary_keyword = str(
+        group.get(
+            "primary_keyword",
+            "",
+        )
+    ).strip()
 
-        Cluster
-          ├── Keyword page
-          ├── Keyword page
-          └── Keyword page
+    if not primary_keyword:
+        raise ValueError(
+            "Final keyword group has no primary keyword."
+        )
 
-    Later iterations will group semantically similar keywords
-    so that one page can target multiple closely related queries.
+    slug = slugify(
+        primary_keyword
+    )
+
+    group_id = str(
+        group.get(
+            "group_id",
+            slug,
+        )
+    )
+
+    intent = keyword_lookup.get(
+        normalize_keyword(
+            primary_keyword
+        ),
+        {},
+    ).get(
+        "intent"
+    )
+
+    return {
+        "id": f"page:{group_id}",
+        "title": primary_keyword.title(),
+        "slug": slug,
+        "url": f"/{slug}/",
+        "page_type": group.get(
+            "page_type",
+            "guide",
+        ),
+        "cluster": cluster_name,
+        "parent_page_id": parent_page_id,
+        "primary_keyword": primary_keyword,
+        "secondary_keywords": group.get(
+            "secondary_keywords",
+            [],
+        ),
+        "intent": intent,
+        "priority": determine_page_priority(
+            primary_keyword,
+            keyword_lookup,
+        ),
+        "indexable": True,
+        "content_status": "planned",
+
+        # Information used by later phases.
+        "source_group_id": group_id,
+        "audit_status": audit.get(
+            "status"
+        ),
+        "audit_confidence": audit.get(
+            "confidence"
+        ),
+        "group_reasoning": group.get(
+            "reasoning",
+            "",
+        ),
+    }
+
+
+# ============================================================
+# CLUSTER ARCHITECTURE
+# ============================================================
+
+
+def build_cluster_architecture(
+    cluster_name: str,
+    groups: List[Dict[str, Any]],
+    audit_lookup: Dict[str, Dict[str, Any]],
+    keyword_lookup: Dict[str, Dict[str, Any]],
+) -> Dict[str, Any]:
+    """
+    Build the final page hierarchy for one topic cluster.
+
+    The hierarchy is:
+
+        Cluster root
+            ├── Semantic page
+            ├── Semantic page
+            └── Semantic page
+
+    Approved and review groups become one page.
+
+    Split groups are sent through Gemini again so they can be
+    divided into multiple coherent final pages.
     """
 
     cluster_page = create_cluster_root_page(
-        cluster
-    )
-
-    keywords = extract_cluster_keywords(
-        cluster
-    )
-
-    keywords = deduplicate_keywords(
-        keywords
+        cluster_name
     )
 
     pages = [
         cluster_page
     ]
 
-    for keyword_data in keywords:
-        keyword = keyword_data.get(
-            "keyword"
+    final_groups: List[Dict[str, Any]] = []
+
+    for group in groups:
+        group_id = group.get(
+            "group_id"
         )
 
-        if not keyword:
+        if not group_id:
             continue
 
-        # Avoid creating a page whose slug is identical to the
-        # cluster page.
-        if slugify(
-            str(keyword)
-        ) == cluster_page["slug"]:
-            continue
+        audit = audit_lookup.get(
+            group_id,
+            {},
+        )
 
-        page = create_keyword_page(
-            keyword_data,
-            cluster,
+        status = audit.get(
+            "status",
+            "review",
+        )
+
+        if status == "split":
+            print(
+                f"  • Splitting group: {group_id}"
+            )
+
+            resolved_groups = resolve_split_group(
+                cluster_name,
+                group,
+                audit,
+            )
+
+            print(
+                f"    ✓ Split into "
+                f"{len(resolved_groups)} final groups"
+            )
+
+            final_groups.extend(
+                resolved_groups
+            )
+
+        else:
+            final_groups.append(
+                {
+                    "group_id": group_id,
+                    "primary_keyword": group.get(
+                        "primary_keyword"
+                    ),
+                    "secondary_keywords": group.get(
+                        "secondary_keywords",
+                        [],
+                    ),
+                    "page_type": group.get(
+                        "page_type",
+                        "guide",
+                    ),
+                    "reasoning": group.get(
+                        "reasoning",
+                        "",
+                    ),
+                }
+            )
+
+    for group in final_groups:
+        group_id = group.get(
+            "group_id"
+        )
+
+        original_audit = audit_lookup.get(
+            group_id,
+            {},
+        )
+
+        # A split group receives its original audit if the final
+        # group ID starts with the original group ID.
+        if not original_audit:
+            for original_id, audit in audit_lookup.items():
+                if group_id.startswith(
+                    original_id
+                ):
+                    original_audit = audit
+                    break
+
+        page = create_final_page(
+            group,
+            cluster_name,
             cluster_page["id"],
+            original_audit,
+            keyword_lookup,
         )
 
         pages.append(
@@ -550,42 +1035,82 @@ def build_cluster_architecture(
     }
 
 
+# ============================================================
+# FINAL ARCHITECTURE
+# ============================================================
+
+
 def build_site_architecture(
     research: Dict[str, Any],
     site_profile: Dict[str, Any],
+    keyword_groups: Dict[str, Any],
+    audit_data: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Build the complete SEO site architecture.
+    Build the final SEO architecture using the outputs of the
+    semantic grouping and audit stages.
 
-    Args:
-        research:
-            v0.1 page opportunity data.
+    This is the key change from the previous implementation:
 
-        site_profile:
-            v0.2 SiteProfile.
+    The architecture is no longer built one keyword at a time.
 
-    Returns:
-        Complete architecture containing clusters and pages.
+    Instead:
+
+        keywords
+            ↓
+        semantic groups
+            ↓
+        audit
+            ↓
+        final pages
     """
 
-    clusters = research.get(
+    keyword_lookup = build_keyword_lookup(
+        research
+    )
+
+    audit_lookup = build_audit_lookup(
+        audit_data
+    )
+
+    grouped_clusters = keyword_groups.get(
         "clusters",
         [],
     )
 
-    all_pages = []
+    all_pages: List[Dict[str, Any]] = []
+    cluster_architectures: List[Dict[str, Any]] = []
 
-    cluster_architectures = []
-
-    for cluster in clusters:
+    for cluster in grouped_clusters:
         if not isinstance(
             cluster,
             dict,
         ):
             continue
 
+        cluster_name = str(
+            cluster.get(
+                "cluster",
+                "",
+            )
+        ).strip()
+
+        if not cluster_name:
+            continue
+
+        print(
+            f"\nBuilding final architecture for "
+            f"'{cluster_name}'..."
+        )
+
         architecture = build_cluster_architecture(
-            cluster
+            cluster_name,
+            cluster.get(
+                "groups",
+                [],
+            ),
+            audit_lookup,
+            keyword_lookup,
         )
 
         cluster_architectures.append(
@@ -598,10 +1123,17 @@ def build_site_architecture(
 
     return {
         "version": "0.2",
+        "architecture_method": "semantic_groups_plus_audit",
+        "site_status": "brand_new",
         "site_profile": site_profile,
         "clusters": cluster_architectures,
         "pages": all_pages,
         "page_count": len(all_pages),
+        "source_files": {
+            "research": V01_OUTPUT_PATH,
+            "keyword_groups": KEYWORD_GROUPS_PATH,
+            "group_audit": GROUP_AUDIT_PATH,
+        },
     }
 
 
@@ -609,18 +1141,21 @@ def build_site_architecture(
 # VALIDATION
 # ============================================================
 
+
 def validate_architecture(
     architecture: Dict[str, Any],
 ) -> None:
     """
-    Validate the generated site architecture.
+    Validate the final architecture.
 
     Checks:
 
     - page IDs are unique
     - URLs are unique
+    - every page has a URL
     - every child references an existing parent
-    - indexable pages have URLs
+    - every non-cluster page has a primary keyword
+    - every page is indexable only when it has a valid URL
     """
 
     pages = architecture.get(
@@ -668,6 +1203,18 @@ def validate_architecture(
             url
         )
 
+        if page.get(
+            "page_type"
+        ) != "cluster":
+
+            if not page.get(
+                "primary_keyword"
+            ):
+                raise ValueError(
+                    f"Non-cluster page has no primary keyword: "
+                    f"{page_id}"
+                )
+
     for page in pages:
         parent_id = page.get(
             "parent_page_id"
@@ -682,31 +1229,76 @@ def validate_architecture(
 
 
 # ============================================================
-# OUTPUT
+# COVERAGE VALIDATION
 # ============================================================
 
-def save_architecture(
+
+def validate_keyword_coverage(
+    keyword_groups: Dict[str, Any],
     architecture: Dict[str, Any],
 ) -> None:
     """
-    Save the generated site architecture to disk.
+    Validate that every keyword from the final semantic groups is
+    represented by at least one architecture page.
+
+    This protects against accidental keyword loss during the
+    architecture transformation.
     """
 
-    os.makedirs(
-        V02_OUTPUT_DIR,
-        exist_ok=True,
-    )
+    expected = set()
 
-    with open(
-        ARCHITECTURE_PATH,
-        "w",
-        encoding="utf-8",
-    ) as file:
-        json.dump(
-            architecture,
-            file,
-            indent=2,
-            ensure_ascii=False,
+    for cluster in keyword_groups.get(
+        "clusters",
+        [],
+    ):
+        for group in cluster.get(
+            "groups",
+            [],
+        ):
+            for keyword in collect_group_keywords(
+                group
+            ):
+                expected.add(
+                    normalize_keyword(
+                        keyword
+                    )
+                )
+
+    actual = set()
+
+    for page in architecture.get(
+        "pages",
+        [],
+    ):
+        primary = page.get(
+            "primary_keyword"
+        )
+
+        if primary:
+            actual.add(
+                normalize_keyword(
+                    primary
+                )
+            )
+
+        for keyword in page.get(
+            "secondary_keywords",
+            [],
+        ):
+            actual.add(
+                normalize_keyword(
+                    keyword
+                )
+            )
+
+    missing = expected - actual
+
+    if missing:
+        raise ValueError(
+            "Final architecture lost keywords: "
+            + ", ".join(
+                sorted(missing)
+            )
         )
 
 
@@ -714,37 +1306,58 @@ def save_architecture(
 # ENTRY POINT
 # ============================================================
 
+
 def run_v02_architecture() -> Dict[str, Any]:
     """
-    Execute the v0.2 architecture-planning stage.
+    Execute the complete final architecture stage.
 
     Pipeline:
 
-        load research
-             ↓
+        load v0.1 research
+                ↓
         load SiteProfile
-             ↓
-        generate cluster architecture
-             ↓
+                ↓
+        load semantic groups
+                ↓
+        load group audits
+                ↓
+        resolve split groups
+                ↓
+        build final pages
+                ↓
         validate
-             ↓
+                ↓
         save architecture
 
     Returns:
-        Generated architecture dictionary.
+        Final architecture dictionary.
     """
 
-    print("\n" + "=" * 60)
-    print("        V0.2 — SITE ARCHITECTURE")
-    print("=" * 60)
+    print(
+        "\n" + "=" * 60
+    )
 
-    print("\n[Step 1] Loading v0.1 research...")
+    print(
+        "        V0.2 — FINAL SITE ARCHITECTURE"
+    )
+
+    print(
+        "=" * 60
+    )
+
+    print(
+        "\n[Step 1] Loading v0.1 research..."
+    )
 
     research = load_v01_research()
 
-    print("  ✓ Research loaded")
+    print(
+        "  ✓ Research loaded"
+    )
 
-    print("\n[Step 2] Loading SiteProfile...")
+    print(
+        "\n[Step 2] Loading SiteProfile..."
+    )
 
     site_profile = load_site_profile()
 
@@ -753,39 +1366,127 @@ def run_v02_architecture() -> Dict[str, Any]:
         f"{site_profile.get('site_model')}"
     )
 
-    print("\n[Step 3] Building site architecture...")
+    print(
+        "\n[Step 3] Loading semantic keyword groups..."
+    )
+
+    keyword_groups = load_keyword_groups()
+
+    total_groups = sum(
+        len(
+            cluster.get(
+                "groups",
+                [],
+            )
+        )
+        for cluster in keyword_groups.get(
+            "clusters",
+            [],
+        )
+    )
+
+    print(
+        f"  ✓ Loaded {total_groups} semantic groups"
+    )
+
+    print(
+        "\n[Step 4] Loading group audit..."
+    )
+
+    audit_data = load_group_audit()
+
+    audit_counts = {
+        "approved": 0,
+        "review": 0,
+        "split": 0,
+    }
+
+    for cluster in audit_data.get(
+        "clusters",
+        [],
+    ):
+        for audit in cluster.get(
+            "audits",
+            [],
+        ):
+            status = audit.get(
+                "status"
+            )
+
+            if status in audit_counts:
+                audit_counts[
+                    status
+                ] += 1
+
+    print(
+        f"  ✓ Approved: {audit_counts['approved']}"
+    )
+
+    print(
+        f"  ✓ Review: {audit_counts['review']}"
+    )
+
+    print(
+        f"  ✓ Split: {audit_counts['split']}"
+    )
+
+    print(
+        "\n[Step 5] Building final page architecture..."
+    )
 
     architecture = build_site_architecture(
         research,
         site_profile,
+        keyword_groups,
+        audit_data,
     )
 
     print(
-        f"  ✓ Generated "
-        f"{architecture['page_count']} pages"
+        f"\n  ✓ Generated "
+        f"{architecture['page_count']} final pages"
     )
 
-    print("\n[Step 4] Validating architecture...")
+    print(
+        "\n[Step 6] Validating architecture..."
+    )
 
     validate_architecture(
         architecture
     )
 
-    print("  ✓ Architecture is valid")
+    validate_keyword_coverage(
+        keyword_groups,
+        architecture,
+    )
 
-    print("\n[Step 5] Saving architecture...")
+    print(
+        "  ✓ Architecture is valid"
+    )
 
-    save_architecture(
-        architecture
+    print(
+        "\n[Step 7] Saving architecture..."
+    )
+
+    save_json_file(
+        ARCHITECTURE_PATH,
+        architecture,
     )
 
     print(
         f"  ✓ Saved: {ARCHITECTURE_PATH}"
     )
 
-    print("\n" + "=" * 60)
-    print("        V0.2 ARCHITECTURE COMPLETE")
-    print("=" * 60)
+    print(
+        "\n" + "=" * 60
+    )
+
+    print(
+        "        V0.2 ARCHITECTURE COMPLETE"
+    )
+
+    print(
+        "=" * 60
+    )
 
     return architecture
 
