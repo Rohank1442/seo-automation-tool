@@ -14,7 +14,6 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-
 # ============================================================
 # RESPONSE SCHEMAS
 # ============================================================
@@ -26,26 +25,19 @@ class FinalKeywordGroup(BaseModel):
     semantic group needs to be split.
     """
 
-    group_id: str = Field(
-        description="Unique ID for the final page group."
-    )
+    group_id: str = Field(description="Unique ID for the final page group.")
 
-    primary_keyword: str = Field(
-        description="Primary keyword targeted by this page."
-    )
+    primary_keyword: str = Field(description="Primary keyword targeted by this page.")
 
     secondary_keywords: List[str] = Field(
         default_factory=list,
-        description="Closely related keywords targeted by the page."
+        description="Closely related keywords targeted by the page.",
     )
 
-    page_type: str = Field(
-        description="Recommended page type."
-    )
+    page_type: str = Field(description="Recommended page type.")
 
-    reasoning: str = Field(
-        description="Why these keywords belong on one page."
-    )
+    reasoning: str = Field(description="Why these keywords belong on one page.")
+
 
 class KeywordPageGroup(BaseModel):
     """
@@ -72,7 +64,7 @@ class KeywordPageGroup(BaseModel):
         description=(
             "Other supplied keywords that share the same search "
             "intent and can naturally be addressed by the same page."
-        )
+        ),
     )
 
     page_type: str = Field(
