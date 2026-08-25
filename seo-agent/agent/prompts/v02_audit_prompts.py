@@ -17,49 +17,32 @@ class GroupAudit(BaseModel):
     Represents the quality assessment of one keyword group.
     """
 
-    group_id: str = Field(
-        description="The exact ID of the group being audited."
-    )
+    group_id: str = Field(description="The exact ID of the group being audited.")
 
-    status: str = Field(
-        description=(
-            "One of: approved, review, or split."
-        )
-    )
+    status: str = Field(description=("One of: approved, review, or split."))
 
     confidence: float = Field(
         description=(
-            "Confidence from 0.0 to 1.0 that the keywords "
-            "belong on one page."
+            "Confidence from 0.0 to 1.0 that the keywords " "belong on one page."
         )
     )
 
     intent_consistent: bool = Field(
-        description=(
-            "Whether the keywords have sufficiently similar "
-            "search intent."
-        )
+        description=("Whether the keywords have sufficiently similar " "search intent.")
     )
 
     topic_coherent: bool = Field(
-        description=(
-            "Whether all keywords belong to the same meaningful "
-            "topic."
-        )
+        description=("Whether all keywords belong to the same meaningful " "topic.")
     )
 
     potential_outliers: List[str] = Field(
         default_factory=list,
-        description=(
-            "Keywords that may not belong in this group."
-        )
+        description=("Keywords that may not belong in this group."),
     )
 
     issues: List[str] = Field(
         default_factory=list,
-        description=(
-            "Problems identified with the proposed group."
-        )
+        description=("Problems identified with the proposed group."),
     )
 
     recommendation: str = Field(
@@ -75,9 +58,7 @@ class GroupAuditResponse(BaseModel):
     Structured response containing audits for all supplied groups.
     """
 
-    audits: List[GroupAudit] = Field(
-        default_factory=list
-    )
+    audits: List[GroupAudit] = Field(default_factory=list)
 
 
 GROUP_AUDIT_SYSTEM_PROMPT = """
