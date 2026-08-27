@@ -1,0 +1,14 @@
+{
+  "site_model": "content",
+  "primary_purpose": "Build user engagement, foster a creator ecosystem, and drive platform growth through interactive fashion content and virtual try-on technology",
+  "target_audience": "Fashion enthusiasts, event attendees, and everyday social media users looking for dress inspiration",
+  "primary_topic": "Social media platform for occasion-based outfit recommendations and virtual try-ons",
+  "geo_scope": "Global / Multi-cultural (focusing on global events and specific regional festivals like Diwali)",
+  "constraints": "None specified",
+  "primary_entities": [
+    "Virtual Try-On Tech"
+  ],
+  "cluster_count": 1,
+  "source": "v01/page_opportunities.json",
+  "version": "0.2"
+}

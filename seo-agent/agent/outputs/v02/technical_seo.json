@@ -1,0 +1,388 @@
+{
+  "version": "0.2",
+  "architecture_type": "technical_seo",
+  "site_status": "brand_new",
+  "base_url": "https://example.com",
+  "summary": {
+    "total_pages": 10,
+    "indexable_pages": 10,
+    "non_indexable_pages": 0,
+    "internal_links": 74,
+    "validation_status": "valid"
+  },
+  "global_rules": {
+    "protocol": "https",
+    "canonical_domain": "https://example.com",
+    "crawlability": {
+      "robots_txt_required": true,
+      "sitemap_required": true,
+      "allow_search_engine_crawling": true
+    },
+    "indexing": {
+      "default": "index, follow",
+      "non_indexable_pages": "noindex, follow"
+    },
+    "url_rules": {
+      "lowercase": true,
+      "hyphens_for_word_separation": true,
+      "trailing_slash": true,
+      "root_level_urls": true,
+      "avoid_query_parameters": true
+    },
+    "metadata": {
+      "title_required": true,
+      "meta_description_required": true,
+      "canonical_required": true
+    },
+    "headings": {
+      "one_h1_per_page": true,
+      "logical_h2_h3_hierarchy": true
+    },
+    "social_metadata": {
+      "open_graph": true,
+      "twitter_cards": true
+    },
+    "structured_data": {
+      "enabled": true,
+      "type_should_match_page": true
+    },
+    "performance": {
+      "responsive_design_required": true,
+      "image_optimization_required": true,
+      "lazy_loading_recommended": true,
+      "minimize_render_blocking_resources": true
+    },
+    "mobile": {
+      "mobile_friendly_required": true
+    }
+  },
+  "robots_txt": {
+    "path": "/robots.txt",
+    "content": "User-agent: *\nAllow: /\n\nSitemap: https://example.com/sitemap.xml\n"
+  },
+  "sitemap": {
+    "path": "/sitemap.xml",
+    "format": "XML",
+    "indexable_urls": 10,
+    "urls": [
+      {
+        "page_id": "cluster:virtual-try-on-tech",
+        "url": "https://example.com/virtual-try-on-tech/",
+        "changefreq": "monthly",
+        "priority": 1.0
+      },
+      {
+        "page_id": "page:what-is-virtual-try-on",
+        "url": "https://example.com/what-is-virtual-try-on/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      },
+      {
+        "page_id": "page:best-virtual-try-on-apps",
+        "url": "https://example.com/best-virtual-try-on-clothing-apps/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      },
+      {
+        "page_id": "page:clothing-design-apps",
+        "url": "https://example.com/apps-to-design-clothing/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      },
+      {
+        "page_id": "page:how-to-design-clothes-online",
+        "url": "https://example.com/how-to-design-clothes-online/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      },
+      {
+        "page_id": "page:outfit-planner-apps",
+        "url": "https://example.com/app-to-plan-outfits/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      },
+      {
+        "page_id": "page:best-online-clothes-shopping-apps",
+        "url": "https://example.com/best-online-shopping-apps-for-clothes/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      },
+      {
+        "page_id": "page:where-to-buy-clothes-online",
+        "url": "https://example.com/where-to-buy-clothes-online/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      },
+      {
+        "page_id": "page:how-to-get-free-clothes-online",
+        "url": "https://example.com/how-to-get-free-clothes-online/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      },
+      {
+        "page_id": "page:how-to-get-clothes-to-sell-online",
+        "url": "https://example.com/how-to-get-clothes-to-sell-online/",
+        "changefreq": "monthly",
+        "priority": 0.7
+      }
+    ]
+  },
+  "internal_linking": {
+    "total_links": 74,
+    "pages_without_inbound_links": [],
+    "pages_without_outbound_links": [],
+    "graph_valid": true
+  },
+  "pages": [
+    {
+      "page_id": "cluster:virtual-try-on-tech",
+      "title": "Virtual Try-On Tech",
+      "url": "/virtual-try-on-tech/",
+      "canonical_url": "https://example.com/virtual-try-on-tech/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:what-is-virtual-try-on",
+      "title": "What Is Virtual Try On",
+      "url": "/what-is-virtual-try-on/",
+      "canonical_url": "https://example.com/what-is-virtual-try-on/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:best-virtual-try-on-apps",
+      "title": "Best Virtual Try On Clothing Apps",
+      "url": "/best-virtual-try-on-clothing-apps/",
+      "canonical_url": "https://example.com/best-virtual-try-on-clothing-apps/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:clothing-design-apps",
+      "title": "Apps To Design Clothing",
+      "url": "/apps-to-design-clothing/",
+      "canonical_url": "https://example.com/apps-to-design-clothing/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:how-to-design-clothes-online",
+      "title": "How To Design Clothes Online",
+      "url": "/how-to-design-clothes-online/",
+      "canonical_url": "https://example.com/how-to-design-clothes-online/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:outfit-planner-apps",
+      "title": "App To Plan Outfits",
+      "url": "/app-to-plan-outfits/",
+      "canonical_url": "https://example.com/app-to-plan-outfits/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:best-online-clothes-shopping-apps",
+      "title": "Best Online Shopping Apps For Clothes",
+      "url": "/best-online-shopping-apps-for-clothes/",
+      "canonical_url": "https://example.com/best-online-shopping-apps-for-clothes/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:where-to-buy-clothes-online",
+      "title": "Where To Buy Clothes Online",
+      "url": "/where-to-buy-clothes-online/",
+      "canonical_url": "https://example.com/where-to-buy-clothes-online/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:how-to-get-free-clothes-online",
+      "title": "How To Get Free Clothes Online",
+      "url": "/how-to-get-free-clothes-online/",
+      "canonical_url": "https://example.com/how-to-get-free-clothes-online/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    },
+    {
+      "page_id": "page:how-to-get-clothes-to-sell-online",
+      "title": "How To Get Clothes To Sell Online",
+      "url": "/how-to-get-clothes-to-sell-online/",
+      "canonical_url": "https://example.com/how-to-get-clothes-to-sell-online/",
+      "indexable": true,
+      "robots": "index, follow",
+      "seo_requirements": {
+        "title_required": true,
+        "meta_description_required": true,
+        "canonical_required": true,
+        "h1_required": true,
+        "single_h1_required": true,
+        "structured_data_recommended": true,
+        "open_graph_required": true
+      },
+      "url_validation": {
+        "https": true,
+        "has_hostname": true,
+        "trailing_slash": true,
+        "root_level": true
+      },
+      "status": "valid"
+    }
+  ],
+  "validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "source_files": {
+    "url_architecture": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\url_architecture.json",
+    "site_architecture": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\site_architecture.json",
+    "internal_linking": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\internal_linking.json"
+  }
+}

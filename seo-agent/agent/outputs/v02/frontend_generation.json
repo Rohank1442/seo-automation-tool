@@ -1,0 +1,82 @@
+{
+  "version": "0.2",
+  "architecture_type": "frontend_generation",
+  "site_status": "brand_new",
+  "output_directory": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend",
+  "summary": {
+    "total_pages": 10,
+    "generated_pages": 10,
+    "internal_links": 74,
+    "robots_txt": true,
+    "sitemap": true,
+    "validation_status": "valid"
+  },
+  "pages": [
+    {
+      "page_id": "cluster:virtual-try-on-tech",
+      "title": "Virtual Try-On Tech",
+      "url": "/virtual-try-on-tech/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\virtual-try-on-tech\\index.html"
+    },
+    {
+      "page_id": "page:what-is-virtual-try-on",
+      "title": "What Is Virtual Try On",
+      "url": "/what-is-virtual-try-on/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\what-is-virtual-try-on\\index.html"
+    },
+    {
+      "page_id": "page:best-virtual-try-on-apps",
+      "title": "Best Virtual Try On Clothing Apps",
+      "url": "/best-virtual-try-on-clothing-apps/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\best-virtual-try-on-clothing-apps\\index.html"
+    },
+    {
+      "page_id": "page:clothing-design-apps",
+      "title": "Apps To Design Clothing",
+      "url": "/apps-to-design-clothing/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\apps-to-design-clothing\\index.html"
+    },
+    {
+      "page_id": "page:how-to-design-clothes-online",
+      "title": "How To Design Clothes Online",
+      "url": "/how-to-design-clothes-online/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\how-to-design-clothes-online\\index.html"
+    },
+    {
+      "page_id": "page:outfit-planner-apps",
+      "title": "App To Plan Outfits",
+      "url": "/app-to-plan-outfits/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\app-to-plan-outfits\\index.html"
+    },
+    {
+      "page_id": "page:best-online-clothes-shopping-apps",
+      "title": "Best Online Shopping Apps For Clothes",
+      "url": "/best-online-shopping-apps-for-clothes/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\best-online-shopping-apps-for-clothes\\index.html"
+    },
+    {
+      "page_id": "page:where-to-buy-clothes-online",
+      "title": "Where To Buy Clothes Online",
+      "url": "/where-to-buy-clothes-online/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\where-to-buy-clothes-online\\index.html"
+    },
+    {
+      "page_id": "page:how-to-get-free-clothes-online",
+      "title": "How To Get Free Clothes Online",
+      "url": "/how-to-get-free-clothes-online/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\how-to-get-free-clothes-online\\index.html"
+    },
+    {
+      "page_id": "page:how-to-get-clothes-to-sell-online",
+      "title": "How To Get Clothes To Sell Online",
+      "url": "/how-to-get-clothes-to-sell-online/",
+      "output": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\frontend\\how-to-get-clothes-to-sell-online\\index.html"
+    }
+  ],
+  "source_files": {
+    "site_architecture": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\site_architecture.json",
+    "url_architecture": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\url_architecture.json",
+    "internal_linking": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\internal_linking.json",
+    "technical_seo": "C:\\Users\\rohan\\OneDrive\\Desktop\\seo-automation\\seo-agent\\agent\\outputs\\v02\\technical_seo.json"
+  }
+}

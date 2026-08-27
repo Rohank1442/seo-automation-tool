@@ -1,0 +1,761 @@
+{
+  "version": "0.2",
+  "architecture_type": "internal_linking",
+  "site_status": "brand_new",
+  "linking_strategy": "cluster_hubs_plus_contextual_related_pages",
+  "summary": {
+    "total_pages": 10,
+    "cluster_pages": 1,
+    "content_pages": 9,
+    "total_links": 74,
+    "average_links_per_page": 7.4,
+    "pages_without_outbound_links": [],
+    "pages_without_inbound_links": []
+  },
+  "links": [
+    {
+      "source_page_id": "page:what-is-virtual-try-on",
+      "source_url": "/what-is-virtual-try-on/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:best-virtual-try-on-apps",
+      "source_url": "/best-virtual-try-on-clothing-apps/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:clothing-design-apps",
+      "source_url": "/apps-to-design-clothing/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:outfit-planner-apps",
+      "source_url": "/app-to-plan-outfits/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:how-to-get-free-clothes-online",
+      "source_url": "/how-to-get-free-clothes-online/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:how-to-get-clothes-to-sell-online",
+      "source_url": "/how-to-get-clothes-to-sell-online/",
+      "target_page_id": "cluster:virtual-try-on-tech",
+      "target_url": "/virtual-try-on-tech/",
+      "anchor_text": "Virtual Try-On Tech",
+      "relationship": "cluster_parent",
+      "reason": "The content page belongs to this topical cluster and should link back to the cluster hub.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:what-is-virtual-try-on",
+      "target_url": "/what-is-virtual-try-on/",
+      "anchor_text": "what is virtual try on",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:best-virtual-try-on-apps",
+      "target_url": "/best-virtual-try-on-clothing-apps/",
+      "anchor_text": "best virtual try on clothing apps",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:clothing-design-apps",
+      "target_url": "/apps-to-design-clothing/",
+      "anchor_text": "apps to design clothing",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:outfit-planner-apps",
+      "target_url": "/app-to-plan-outfits/",
+      "anchor_text": "app to plan outfits",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:how-to-get-free-clothes-online",
+      "target_url": "/how-to-get-free-clothes-online/",
+      "anchor_text": "how to get free clothes online",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "cluster:virtual-try-on-tech",
+      "source_url": "/virtual-try-on-tech/",
+      "target_page_id": "page:how-to-get-clothes-to-sell-online",
+      "target_url": "/how-to-get-clothes-to-sell-online/",
+      "anchor_text": "how to get clothes to sell online",
+      "relationship": "cluster_child",
+      "reason": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages.",
+      "priority": "high"
+    },
+    {
+      "source_page_id": "page:what-is-virtual-try-on",
+      "source_url": "/what-is-virtual-try-on/",
+      "target_page_id": "page:best-virtual-try-on-apps",
+      "target_url": "/best-virtual-try-on-clothing-apps/",
+      "anchor_text": "best virtual try on clothing apps",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-virtual-try-on-apps",
+      "source_url": "/best-virtual-try-on-clothing-apps/",
+      "target_page_id": "page:what-is-virtual-try-on",
+      "target_url": "/what-is-virtual-try-on/",
+      "anchor_text": "what is virtual try on",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:what-is-virtual-try-on",
+      "source_url": "/what-is-virtual-try-on/",
+      "target_page_id": "page:clothing-design-apps",
+      "target_url": "/apps-to-design-clothing/",
+      "anchor_text": "apps to design clothing",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:clothing-design-apps",
+      "source_url": "/apps-to-design-clothing/",
+      "target_page_id": "page:what-is-virtual-try-on",
+      "target_url": "/what-is-virtual-try-on/",
+      "anchor_text": "what is virtual try on",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:what-is-virtual-try-on",
+      "source_url": "/what-is-virtual-try-on/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "page:what-is-virtual-try-on",
+      "target_url": "/what-is-virtual-try-on/",
+      "anchor_text": "what is virtual try on",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:what-is-virtual-try-on",
+      "source_url": "/what-is-virtual-try-on/",
+      "target_page_id": "page:outfit-planner-apps",
+      "target_url": "/app-to-plan-outfits/",
+      "anchor_text": "app to plan outfits",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:outfit-planner-apps",
+      "source_url": "/app-to-plan-outfits/",
+      "target_page_id": "page:what-is-virtual-try-on",
+      "target_url": "/what-is-virtual-try-on/",
+      "anchor_text": "what is virtual try on",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:what-is-virtual-try-on",
+      "source_url": "/what-is-virtual-try-on/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "page:what-is-virtual-try-on",
+      "target_url": "/what-is-virtual-try-on/",
+      "anchor_text": "what is virtual try on",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:what-is-virtual-try-on",
+      "source_url": "/what-is-virtual-try-on/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "page:what-is-virtual-try-on",
+      "target_url": "/what-is-virtual-try-on/",
+      "anchor_text": "what is virtual try on",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-virtual-try-on-apps",
+      "source_url": "/best-virtual-try-on-clothing-apps/",
+      "target_page_id": "page:clothing-design-apps",
+      "target_url": "/apps-to-design-clothing/",
+      "anchor_text": "apps to design clothing",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:clothing-design-apps",
+      "source_url": "/apps-to-design-clothing/",
+      "target_page_id": "page:best-virtual-try-on-apps",
+      "target_url": "/best-virtual-try-on-clothing-apps/",
+      "anchor_text": "best virtual try on clothing apps",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-virtual-try-on-apps",
+      "source_url": "/best-virtual-try-on-clothing-apps/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "page:best-virtual-try-on-apps",
+      "target_url": "/best-virtual-try-on-clothing-apps/",
+      "anchor_text": "best virtual try on clothing apps",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-virtual-try-on-apps",
+      "source_url": "/best-virtual-try-on-clothing-apps/",
+      "target_page_id": "page:outfit-planner-apps",
+      "target_url": "/app-to-plan-outfits/",
+      "anchor_text": "app to plan outfits",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:outfit-planner-apps",
+      "source_url": "/app-to-plan-outfits/",
+      "target_page_id": "page:best-virtual-try-on-apps",
+      "target_url": "/best-virtual-try-on-clothing-apps/",
+      "anchor_text": "best virtual try on clothing apps",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-virtual-try-on-apps",
+      "source_url": "/best-virtual-try-on-clothing-apps/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "page:best-virtual-try-on-apps",
+      "target_url": "/best-virtual-try-on-clothing-apps/",
+      "anchor_text": "best virtual try on clothing apps",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-virtual-try-on-apps",
+      "source_url": "/best-virtual-try-on-clothing-apps/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "page:best-virtual-try-on-apps",
+      "target_url": "/best-virtual-try-on-clothing-apps/",
+      "anchor_text": "best virtual try on clothing apps",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:clothing-design-apps",
+      "source_url": "/apps-to-design-clothing/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "page:clothing-design-apps",
+      "target_url": "/apps-to-design-clothing/",
+      "anchor_text": "apps to design clothing",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:clothing-design-apps",
+      "source_url": "/apps-to-design-clothing/",
+      "target_page_id": "page:outfit-planner-apps",
+      "target_url": "/app-to-plan-outfits/",
+      "anchor_text": "app to plan outfits",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:outfit-planner-apps",
+      "source_url": "/app-to-plan-outfits/",
+      "target_page_id": "page:clothing-design-apps",
+      "target_url": "/apps-to-design-clothing/",
+      "anchor_text": "apps to design clothing",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:clothing-design-apps",
+      "source_url": "/apps-to-design-clothing/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "page:clothing-design-apps",
+      "target_url": "/apps-to-design-clothing/",
+      "anchor_text": "apps to design clothing",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:clothing-design-apps",
+      "source_url": "/apps-to-design-clothing/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "page:clothing-design-apps",
+      "target_url": "/apps-to-design-clothing/",
+      "anchor_text": "apps to design clothing",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "page:outfit-planner-apps",
+      "target_url": "/app-to-plan-outfits/",
+      "anchor_text": "app to plan outfits",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:outfit-planner-apps",
+      "source_url": "/app-to-plan-outfits/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "page:how-to-get-free-clothes-online",
+      "target_url": "/how-to-get-free-clothes-online/",
+      "anchor_text": "how to get free clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-get-free-clothes-online",
+      "source_url": "/how-to-get-free-clothes-online/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-design-clothes-online",
+      "source_url": "/how-to-design-clothes-online/",
+      "target_page_id": "page:how-to-get-clothes-to-sell-online",
+      "target_url": "/how-to-get-clothes-to-sell-online/",
+      "anchor_text": "how to get clothes to sell online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-get-clothes-to-sell-online",
+      "source_url": "/how-to-get-clothes-to-sell-online/",
+      "target_page_id": "page:how-to-design-clothes-online",
+      "target_url": "/how-to-design-clothes-online/",
+      "anchor_text": "how to design clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:outfit-planner-apps",
+      "source_url": "/app-to-plan-outfits/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "page:outfit-planner-apps",
+      "target_url": "/app-to-plan-outfits/",
+      "anchor_text": "app to plan outfits",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:outfit-planner-apps",
+      "source_url": "/app-to-plan-outfits/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "page:outfit-planner-apps",
+      "target_url": "/app-to-plan-outfits/",
+      "anchor_text": "app to plan outfits",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "page:how-to-get-free-clothes-online",
+      "target_url": "/how-to-get-free-clothes-online/",
+      "anchor_text": "how to get free clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-get-free-clothes-online",
+      "source_url": "/how-to-get-free-clothes-online/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:best-online-clothes-shopping-apps",
+      "source_url": "/best-online-shopping-apps-for-clothes/",
+      "target_page_id": "page:how-to-get-clothes-to-sell-online",
+      "target_url": "/how-to-get-clothes-to-sell-online/",
+      "anchor_text": "how to get clothes to sell online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-get-clothes-to-sell-online",
+      "source_url": "/how-to-get-clothes-to-sell-online/",
+      "target_page_id": "page:best-online-clothes-shopping-apps",
+      "target_url": "/best-online-shopping-apps-for-clothes/",
+      "anchor_text": "best online shopping apps for clothes",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "page:how-to-get-free-clothes-online",
+      "target_url": "/how-to-get-free-clothes-online/",
+      "anchor_text": "how to get free clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-get-free-clothes-online",
+      "source_url": "/how-to-get-free-clothes-online/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:where-to-buy-clothes-online",
+      "source_url": "/where-to-buy-clothes-online/",
+      "target_page_id": "page:how-to-get-clothes-to-sell-online",
+      "target_url": "/how-to-get-clothes-to-sell-online/",
+      "anchor_text": "how to get clothes to sell online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-get-clothes-to-sell-online",
+      "source_url": "/how-to-get-clothes-to-sell-online/",
+      "target_page_id": "page:where-to-buy-clothes-online",
+      "target_url": "/where-to-buy-clothes-online/",
+      "anchor_text": "where to buy clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-get-free-clothes-online",
+      "source_url": "/how-to-get-free-clothes-online/",
+      "target_page_id": "page:how-to-get-clothes-to-sell-online",
+      "target_url": "/how-to-get-clothes-to-sell-online/",
+      "anchor_text": "how to get clothes to sell online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    },
+    {
+      "source_page_id": "page:how-to-get-clothes-to-sell-online",
+      "source_url": "/how-to-get-clothes-to-sell-online/",
+      "target_page_id": "page:how-to-get-free-clothes-online",
+      "target_url": "/how-to-get-free-clothes-online/",
+      "anchor_text": "how to get free clothes online",
+      "relationship": "related_content",
+      "reason": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users.",
+      "priority": "medium"
+    }
+  ],
+  "source_files": {
+    "url_architecture": "outputs\\v02\\url_architecture.json",
+    "site_architecture": "outputs\\v02\\site_architecture.json"
+  }
+}

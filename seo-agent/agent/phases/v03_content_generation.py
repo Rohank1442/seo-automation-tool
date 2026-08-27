@@ -1,12 +1,13 @@
 """
-v0.3 — Content Generation Pipeline, Page Candidate Builder & First-Wave Page Selector.
+v0.3 — Content Generation Pipeline, Page Candidate Builder, First-Wave Selector & Content Brief Generator.
 
 This phase consumes the outputs of v0.1 (SEO & Competitor Research) and v0.2
 (Site Architecture, Keyword Groups, Group Audit, URL Architecture, Internal Linking,
 and Technical SEO) to:
 1. Build and validate normalized Page Candidates (saved to outputs/v03/page_candidates.json)
 2. Run multi-factor First-Wave Page Selection (10–20 pages, saved to outputs/v03/selected_pages.json)
-3. Generate comprehensive, publication-ready SEO content, technical metadata, FAQ blocks,
+3. Generate comprehensive Gemini-powered Structured Content Briefs (saved to outputs/v03/content_briefs.json)
+4. Generate publication-ready SEO content, technical metadata, FAQ blocks,
    and internal link placements for selected pages.
 
 Inputs (Read-only):
@@ -21,6 +22,7 @@ Inputs (Read-only):
 Outputs:
     - outputs/v03/page_candidates.json
     - outputs/v03/selected_pages.json
+    - outputs/v03/content_briefs.json
     - outputs/v03/content_manifest.json
     - outputs/v03/content_generation_report.md
     - outputs/v03/pages/{slug}.md
@@ -49,15 +51,21 @@ try:
         METADATA_GENERATION_SYSTEM_PROMPT,
         PAGE_BRIEF_SYSTEM_PROMPT,
         SECTION_DRAFTING_SYSTEM_PROMPT,
+        STRUCTURED_CONTENT_BRIEF_SYSTEM_PROMPT,
+        ContentBriefInternalLink,
         ContentOutlineResponse,
         ContentQualityAuditResponse,
+        ContentRequirements,
         FAQSectionResponse,
+        OutlineSection,
         PageMetadataResponse,
+        StructuredContentBriefResponse,
         build_content_audit_prompt,
         build_drafting_prompt,
         build_faq_prompt,
         build_metadata_prompt,
         build_page_brief_prompt,
+        build_structured_content_brief_prompt,
     )
 except ImportError:
     # Handle direct script execution or module invocation
@@ -69,15 +77,21 @@ except ImportError:
         METADATA_GENERATION_SYSTEM_PROMPT,
         PAGE_BRIEF_SYSTEM_PROMPT,
         SECTION_DRAFTING_SYSTEM_PROMPT,
+        STRUCTURED_CONTENT_BRIEF_SYSTEM_PROMPT,
+        ContentBriefInternalLink,
         ContentOutlineResponse,
         ContentQualityAuditResponse,
+        ContentRequirements,
         FAQSectionResponse,
+        OutlineSection,
         PageMetadataResponse,
+        StructuredContentBriefResponse,
         build_content_audit_prompt,
         build_drafting_prompt,
         build_faq_prompt,
         build_metadata_prompt,
         build_page_brief_prompt,
+        build_structured_content_brief_prompt,
     )
 
 
@@ -113,6 +127,7 @@ V03_OUTPUTS_DIR = OUTPUTS_DIR / "v03"
 V03_PAGES_DIR = V03_OUTPUTS_DIR / "pages"
 PAGE_CANDIDATES_PATH = V03_OUTPUTS_DIR / "page_candidates.json"
 SELECTED_PAGES_PATH = V03_OUTPUTS_DIR / "selected_pages.json"
+CONTENT_BRIEFS_PATH = V03_OUTPUTS_DIR / "content_briefs.json"
 
 
 # ============================================================
@@ -339,7 +354,7 @@ class FirstWaveSelectionManifest:
 
 @dataclass
 class PageContext:
-    """Context wrapper for executing single-page generation."""
+    """Context wrapper for executing single-page brief and content generation."""
 
     candidate: NormalizedPageCandidate
 
@@ -358,6 +373,10 @@ class PageContext:
     @property
     def url(self) -> str:
         return self.candidate.url
+
+    @property
+    def canonical_url(self) -> str:
+        return self.candidate.canonical_url
 
     @property
     def page_type(self) -> str:
@@ -414,6 +433,14 @@ class PageContext:
     @property
     def research_questions(self) -> List[str]:
         return self.candidate.content_strategy.relevant_faqs
+
+    @property
+    def keywords(self) -> KeywordsContainer:
+        return self.candidate.keywords
+
+    @property
+    def question_keywords(self) -> List[str]:
+        return self.candidate.keywords.question_keywords
 
 
 @dataclass
@@ -890,17 +917,11 @@ def score_page_candidate(
     cluster_representation_counts: Dict[str, int],
 ) -> Tuple[float, PageScoringBreakdown, str]:
     """
-    Calculate a multi-criteria SEO score for a page candidate:
-    1. Group Audit Confidence (approved vs review/split)
-    2. Long-Tail Search Opportunity (multi-word depth & question keywords)
-    3. Low Competition / Early Rankability
-    4. Content-Gap Match & Priority
-    5. Search Intent Clarity
-    6. Cluster Diversity & Link Hierarchy Balance
+    Calculate a multi-criteria SEO score for a page candidate.
     """
     reasons: List[str] = []
 
-    # 1. Audit Score (0.0 to 1.0)
+    # 1. Audit Score
     audit = candidate.keyword_audit
     if candidate.page_type == "cluster":
         audit_score = 1.0
@@ -915,7 +936,7 @@ def score_page_candidate(
         audit_score = 0.50
         reasons.append("Resolved split group")
 
-    # 2. Long-Tail Opportunity (0.0 to 1.0)
+    # 2. Long-Tail Opportunity
     p_kw = candidate.keywords.primary_keyword or ""
     p_kw_words = len(p_kw.split()) if p_kw else 0
     q_count = len(candidate.keywords.question_keywords)
@@ -939,8 +960,7 @@ def score_page_candidate(
         long_tail_score = min(1.0, long_tail_score + 0.10)
         reasons.append(f"Addresses {q_count} target question queries")
 
-    # 3. Low Competition / Early Domain Rankability (0.0 to 1.0)
-    # Check if keyword details contain competition score
+    # 3. Low Competition / Early Domain Rankability
     comp_scores = [
         kw.get("competition") for kw in candidate.keywords.all_keyword_details
         if kw.get("competition") is not None
@@ -950,7 +970,6 @@ def score_page_candidate(
         low_competition_score = max(0.2, 1.0 - avg_comp)
         reasons.append(f"DataForSEO competition score: {avg_comp:.2f}")
     else:
-        # Informational & how-to queries have easier initial indexing velocity
         if candidate.search_intent == "informational" or candidate.page_type in ["guide", "informational"]:
             low_competition_score = 0.85
             reasons.append("Informational / how-to intent (high early rankability)")
@@ -960,7 +979,7 @@ def score_page_candidate(
         else:
             low_competition_score = 0.65
 
-    # 4. Content-Gap Match & Priority (0.0 to 1.0)
+    # 4. Content-Gap Match & Priority
     content_gap_score = 0.50
     p_kw_lower = p_kw.lower()
     title_lower = candidate.title.lower()
@@ -987,7 +1006,7 @@ def score_page_candidate(
         content_gap_score = max(content_gap_score, 0.85)
         reasons.append("High architectural priority")
 
-    # 5. Search Intent Clarity (0.0 to 1.0)
+    # 5. Search Intent Clarity
     if candidate.search_intent in ["informational", "commercial", "transactional"]:
         intent_clarity_score = 0.95
         reasons.append(f"Definitive {candidate.search_intent} intent")
@@ -997,7 +1016,7 @@ def score_page_candidate(
     else:
         intent_clarity_score = 0.60
 
-    # 6. Cluster Diversity Score (0.0 to 1.0)
+    # 6. Cluster Diversity Score
     cluster_count = cluster_representation_counts.get(candidate.cluster, 0)
     cluster_diversity_score = 1.0 / (1.0 + (cluster_count * 0.15))
     if cluster_count == 0:
@@ -1035,13 +1054,6 @@ def select_first_wave_pages(
 ) -> FirstWaveSelectionManifest:
     """
     Select the optimal 10–20 pages for the First Wave of content generation.
-
-    Selection Logic:
-    1. Evaluates all candidates across the 6 scoring dimensions.
-    2. Guarantees inclusion of cluster hubs when include_cluster_hubs is True.
-    3. Ranks remaining candidates by total score descending.
-    4. Selects between min_pages (default 10) and max_pages (default 20),
-       or exact target_count if configured.
     """
     cfg = config or FirstWaveSelectionConfig()
     logger.info("Executing First-Wave page selection algorithm...")
@@ -1058,10 +1070,7 @@ def select_first_wave_pages(
             selected_pages=[],
         )
 
-    # Track cluster representation for diversity scoring
     cluster_counts: Dict[str, int] = {}
-
-    # Separate cluster hubs if mandatory
     hub_candidates: List[NormalizedPageCandidate] = []
     content_candidates: List[NormalizedPageCandidate] = []
 
@@ -1076,47 +1085,38 @@ def select_first_wave_pages(
         else:
             content_candidates.append(c)
 
-    # Score all candidates
     scored_candidates: List[Tuple[float, NormalizedPageCandidate, PageScoringBreakdown, str]] = []
 
     for c in hub_candidates + content_candidates:
         score, breakdown, rationale = score_page_candidate(c, cfg, cluster_counts)
         scored_candidates.append((score, c, breakdown, rationale))
 
-    # Sort candidates by score descending
-    # Cluster hubs are given priority slots to anchor the topology
     scored_hubs = [item for item in scored_candidates if item[1].page_type == "cluster"]
     scored_content = [item for item in scored_candidates if item[1].page_type != "cluster"]
 
     scored_hubs.sort(key=lambda x: x[0], reverse=True)
     scored_content.sort(key=lambda x: x[0], reverse=True)
 
-    # Determine target selection size
     if cfg.target_count is not None:
         target_size = min(total_available, max(cfg.min_pages, min(cfg.max_pages, cfg.target_count)))
     else:
-        # Default: scale appropriately between min_pages and max_pages based on pool size
         target_size = min(total_available, max(cfg.min_pages, min(cfg.max_pages, total_available)))
 
     chosen_items: List[Tuple[float, NormalizedPageCandidate, PageScoringBreakdown, str]] = []
 
-    # First add hubs
     for item in scored_hubs:
         chosen_items.append(item)
         cluster_counts[item[1].cluster] = cluster_counts.get(item[1].cluster, 0) + 1
 
-    # Then fill remaining quota with top-scoring content candidates
     remaining_quota = target_size - len(chosen_items)
     for item in scored_content[:remaining_quota]:
         chosen_items.append(item)
         cluster_counts[item[1].cluster] = cluster_counts.get(item[1].cluster, 0) + 1
 
-    # In case pool was smaller than min_pages or all content candidates fit, choose all
     if len(chosen_items) < target_size and len(scored_content) > remaining_quota:
         extra_needed = target_size - len(chosen_items)
         chosen_items.extend(scored_content[remaining_quota : remaining_quota + extra_needed])
 
-    # Re-sort all chosen items by score descending for final ranking
     chosen_items.sort(key=lambda x: x[0], reverse=True)
 
     selected_pages: List[SelectedPage] = []
@@ -1142,7 +1142,6 @@ def select_first_wave_pages(
         )
         selected_pages.append(selected)
 
-    # Build excluded candidates list
     chosen_ids = {c.candidate_id for c in selected_pages}
     excluded = [
         {
@@ -1156,7 +1155,6 @@ def select_first_wave_pages(
         if item[1].candidate_id not in chosen_ids
     ]
 
-    # Calculate distributions
     intent_dist: Dict[str, int] = {}
     type_dist: Dict[str, int] = {}
     for p in selected_pages:
@@ -1220,18 +1218,263 @@ def run_first_wave_selection(
     out_dir = output_dir or V03_OUTPUTS_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Load artifacts
     artifacts = load_all_pipeline_inputs()
-
-    # 2. Build candidates
     candidates_manifest = build_unified_page_candidates(artifacts)
     save_page_candidates(candidates_manifest, out_dir / "page_candidates.json")
 
-    # 3. Select First-Wave pages
     selection_manifest = select_first_wave_pages(candidates_manifest, config)
     selected_path = save_selected_pages(selection_manifest, out_dir / "selected_pages.json")
 
     return selected_path
+
+
+# ============================================================
+# STEP 4: STRUCTURED CONTENT BRIEF GENERATOR (GEMINI JSON)
+# ============================================================
+
+def generate_structured_content_brief(
+    context: PageContext,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """
+    Generate a complete, structured content brief for a selected page using Gemini JSON output.
+    Enforces all requirements: primary keyword, secondary keywords, search intent, title recommendation,
+    H1, H2/H3 outline, questions to answer, content requirements, internal-link targets, schema type,
+    meta title, and meta description.
+    """
+    logger.info(f"Generating structured content brief for: '{context.title}' ({context.url})...")
+
+    # Map outbound internal links to structured schema objects
+    internal_links_models: List[ContentBriefInternalLink] = []
+    for link in context.outbound_internal_links:
+        internal_links_models.append(
+            ContentBriefInternalLink(
+                target_url=link.get("target_url", ""),
+                anchor_text=link.get("anchor_text", context.title),
+                relationship=link.get("relationship", "related"),
+                placement_context=link.get("reason", "Topical reference section"),
+            )
+        )
+
+    if dry_run:
+        logger.info(f"  [DRY-RUN] Synthesizing structured brief for: {context.title}")
+        kw = context.primary_keyword or context.title
+        rec_words = context.candidate.content_strategy.recommended_word_count
+
+        # Build clean deterministic outline
+        outline = [
+            OutlineSection(
+                heading_level="H2",
+                heading_text=f"Understanding {context.title}: Key Concepts & Fundamentals",
+                target_keywords=[kw] if kw else [],
+                key_points=[
+                    f"Core definition and background of {context.title}",
+                    "Current industry adoption and relevance",
+                    "Target audience benefits and pain points addressed",
+                ],
+                recommended_word_count=int(rec_words * 0.25),
+                internal_link_targets=[l.target_url for l in internal_links_models[:2]],
+            ),
+            OutlineSection(
+                heading_level="H2",
+                heading_text=f"Top Features, Tools and Best Practices",
+                target_keywords=context.secondary_keywords[:2],
+                key_points=[
+                    "Comparative breakdown of leading approaches",
+                    "Practical capabilities and technical requirements",
+                    "Actionable tips for maximizing quality and fit",
+                ],
+                recommended_word_count=int(rec_words * 0.30),
+                internal_link_targets=[l.target_url for l in internal_links_models[2:4]],
+            ),
+            OutlineSection(
+                heading_level="H2",
+                heading_text=f"Step-by-Step Practical Implementation Workflow",
+                target_keywords=context.secondary_keywords[2:4],
+                key_points=[
+                    "Step 1: Setting up initial parameters and selecting the right platform",
+                    "Step 2: Uploading, modeling, and configuring assets",
+                    "Step 3: Evaluating accuracy, styling, and sharing output",
+                ],
+                recommended_word_count=int(rec_words * 0.25),
+                internal_link_targets=[],
+            ),
+            OutlineSection(
+                heading_level="H2",
+                heading_text="Frequently Asked Questions",
+                target_keywords=context.keywords.question_keywords[:2],
+                key_points=[
+                    "Direct answers to high-volume user search queries",
+                    "Common pitfalls and how to avoid them",
+                ],
+                recommended_word_count=int(rec_words * 0.20),
+                internal_link_targets=[],
+            ),
+        ]
+
+        questions = context.research_questions[:4] if context.research_questions else [
+            f"What is the best way to get started with {context.title.lower()}?",
+            f"How accurate is {context.title.lower()} in real-world scenarios?",
+            f"Are there free tools available for {context.title.lower()}?",
+        ]
+
+        reqs = ContentRequirements(
+            estimated_word_count=rec_words,
+            target_audience=context.target_audience,
+            tone_of_voice="Authoritative, practical, engaging, and clear",
+            required_formatting_elements=[
+                "Feature comparison summary table",
+                "Numbered step-by-step implementation guide",
+                "Callout tip boxes for expert advice",
+                "Structured FAQ block with direct answers",
+            ],
+            eeat_signals=[
+                "First-hand testing methodology and visual quality assessments",
+                "Clear explanations of technical sizing and AI fitting mechanics",
+                "Direct actionable recommendations without filler preamble",
+            ],
+        )
+
+        title_rec = f"{context.title}: The Ultimate Guide (2026)"
+        h1_text = f"{context.title}: Everything You Need to Know"
+        meta_title = f"{context.title} - Complete 2026 Guide"[:60]
+        meta_desc = f"Master {kw}. Discover top tools, step-by-step tutorials, comparisons, and expert fashion tech insights."[:155]
+
+        brief_response = StructuredContentBriefResponse(
+            primary_keyword=context.primary_keyword,
+            secondary_keywords=context.secondary_keywords,
+            search_intent=context.search_intent,
+            title_recommendation=title_rec,
+            h1=h1_text,
+            meta_title=meta_title,
+            meta_description=meta_desc,
+            schema_type=context.candidate.technical_seo.schema_type,
+            outline=outline,
+            questions_to_answer=questions,
+            content_requirements=reqs,
+            internal_link_targets=internal_links_models,
+        )
+    else:
+        prompt = build_structured_content_brief_prompt(
+            page_title=context.title,
+            page_url=context.url,
+            page_type=context.page_type,
+            cluster_name=context.cluster,
+            primary_keyword=context.primary_keyword,
+            secondary_keywords=context.secondary_keywords,
+            search_intent=context.search_intent,
+            target_audience=context.target_audience,
+            site_purpose=context.site_purpose,
+            content_gaps=context.content_gaps,
+            internal_links_outbound=context.outbound_internal_links,
+            research_questions=context.research_questions,
+            recommended_word_count=context.candidate.content_strategy.recommended_word_count,
+        )
+
+        try:
+            brief_response: StructuredContentBriefResponse = generate_json(
+                prompt=prompt,
+                response_schema=StructuredContentBriefResponse,
+                system_instruction=STRUCTURED_CONTENT_BRIEF_SYSTEM_PROMPT,
+            )
+        except Exception as e:
+            logger.warning(f"Gemini API call for brief failed ({e}). Generating fallback structured brief.")
+            return generate_structured_content_brief(context, dry_run=True)
+
+    # Package unified brief with page identity
+    brief_dict = brief_response.model_dump()
+    unified_brief = {
+        "page_id": context.page_id,
+        "slug": context.slug,
+        "url": context.url,
+        "canonical_url": context.canonical_url,
+        "page_type": context.page_type,
+        "cluster": context.cluster,
+        "primary_keyword": brief_dict.get("primary_keyword") or context.primary_keyword,
+        "secondary_keywords": brief_dict.get("secondary_keywords") or context.secondary_keywords,
+        "search_intent": brief_dict.get("search_intent") or context.search_intent,
+        "title_recommendation": brief_dict.get("title_recommendation", context.title),
+        "h1": brief_dict.get("h1", context.title),
+        "meta_title": brief_dict.get("meta_title", f"{context.title} (2026 Guide)"[:60]),
+        "meta_description": brief_dict.get("meta_description", f"Complete guide to {context.title}."[:155]),
+        "schema_type": brief_dict.get("schema_type", context.candidate.technical_seo.schema_type),
+        "outline": brief_dict.get("outline", []),
+        "questions_to_answer": brief_dict.get("questions_to_answer", context.research_questions),
+        "content_requirements": brief_dict.get("content_requirements", {}),
+        "internal_link_targets": brief_dict.get("internal_link_targets", []),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    return unified_brief
+
+
+def generate_all_content_briefs(
+    selected_manifest: FirstWaveSelectionManifest,
+    candidates_manifest: PageCandidatesManifest,
+    dry_run: bool = False,
+    output_path: Optional[Path] = None,
+) -> Tuple[Dict[str, Any], Path]:
+    """
+    Generate and persist structured content briefs for all First-Wave selected pages.
+    Saves to outputs/v03/content_briefs.json.
+    """
+    logger.info("==========================================================")
+    logger.info(f"GENERATING CONTENT BRIEFS FOR {len(selected_manifest.selected_pages)} SELECTED PAGES")
+    logger.info("==========================================================")
+
+    candidate_map = {c.candidate_id: c for c in candidates_manifest.candidates}
+    briefs_list: List[Dict[str, Any]] = []
+
+    for idx, sel_page in enumerate(selected_manifest.selected_pages, start=1):
+        cand = candidate_map.get(sel_page.candidate_id)
+        if not cand:
+            logger.warning(f"Candidate '{sel_page.candidate_id}' not found in candidate pool. Skipping.")
+            continue
+
+        ctx = PageContext(candidate=cand)
+        logger.info(f"[{idx}/{len(selected_manifest.selected_pages)}] Building brief for: {sel_page.title}")
+        brief_data = generate_structured_content_brief(ctx, dry_run=dry_run)
+        briefs_list.append(brief_data)
+
+    # Compute summary metrics
+    total_words = sum(
+        b.get("content_requirements", {}).get("estimated_word_count", 1200) for b in briefs_list
+    )
+    total_sections = sum(len(b.get("outline", [])) for b in briefs_list)
+    total_links = sum(len(b.get("internal_link_targets", [])) for b in briefs_list)
+
+    summary = {
+        "total_briefs": len(briefs_list),
+        "total_target_words": total_words,
+        "average_target_words": int(total_words / len(briefs_list)) if briefs_list else 0,
+        "average_sections_per_brief": round(total_sections / len(briefs_list), 1) if briefs_list else 0,
+        "average_internal_links_per_brief": round(total_links / len(briefs_list), 1) if briefs_list else 0,
+        "schema_types_breakdown": {
+            s_type: sum(1 for b in briefs_list if b.get("schema_type") == s_type)
+            for s_type in set(b.get("schema_type", "Article") for b in briefs_list)
+        },
+    }
+
+    content_briefs_manifest = {
+        "version": "0.3",
+        "phase": "content_brief_generation",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": summary,
+        "briefs": briefs_list,
+    }
+
+    target_file = output_path or CONTENT_BRIEFS_PATH
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(target_file, "w", encoding="utf-8") as f:
+        json.dump(content_briefs_manifest, f, indent=2, ensure_ascii=False)
+
+    logger.info("==========================================================")
+    logger.info(f"CONTENT BRIEFS GENERATED AND SAVED TO: {target_file}")
+    logger.info(f"  Total Briefs: {len(briefs_list)} | Total Target Words: {total_words:,}")
+    logger.info("==========================================================")
+
+    return content_briefs_manifest, target_file
 
 
 def compile_page_contexts(
@@ -1242,14 +1485,12 @@ def compile_page_contexts(
     candidates_manifest = build_unified_page_candidates(artifacts)
     save_page_candidates(candidates_manifest)
 
-    # If no selection manifest provided, run first-wave selection
     if selection_manifest is None:
         selection_manifest = select_first_wave_pages(candidates_manifest)
         save_selected_pages(selection_manifest)
 
     selected_ids = {p.candidate_id for p in selection_manifest.selected_pages}
 
-    # Filter candidates to only those selected
     chosen_candidates = [
         c for c in candidates_manifest.candidates if c.candidate_id in selected_ids
     ]
@@ -1258,111 +1499,40 @@ def compile_page_contexts(
 
 
 # ============================================================
-# STEP 4: CONTENT GENERATION GENERATOR FUNCTIONS
+# STEP 5: CONTENT GENERATION GENERATOR FUNCTIONS
 # ============================================================
 
-def generate_page_brief(context: PageContext, dry_run: bool = False) -> ContentOutlineResponse:
-    """Generate a structured content brief and section outline for the page."""
-    if dry_run:
-        logger.info(f"  [DRY-RUN] Generating content brief for: {context.title}")
-        return ContentOutlineResponse(
-            page_title=context.title,
-            h1_heading=f"{context.title}: The Complete Guide",
-            target_audience=context.target_audience,
-            estimated_total_word_count=context.candidate.content_strategy.recommended_word_count,
-            content_format=context.page_type,
-            sections=[
-                {
-                    "heading_level": "H2",
-                    "heading_text": f"Understanding {context.title}",
-                    "target_keywords": [context.primary_keyword] if context.primary_keyword else [],
-                    "key_points": ["Core definitions", "Current industry state", "Why it matters"],
-                    "recommended_word_count": 300,
-                    "internal_link_opportunities": [
-                        l.get("target_url", "") for l in context.outbound_internal_links[:2]
-                    ],
-                },
-                {
-                    "heading_level": "H2",
-                    "heading_text": "Key Benefits and Real-World Applications",
-                    "target_keywords": context.secondary_keywords[:2],
-                    "key_points": ["Practical advantages", "User experience enhancement", "E-commerce impact"],
-                    "recommended_word_count": 400,
-                    "internal_link_opportunities": [
-                        l.get("target_url", "") for l in context.outbound_internal_links[2:4]
-                    ],
-                },
-                {
-                    "heading_level": "H2",
-                    "heading_text": "Step-by-Step Implementation Guide",
-                    "target_keywords": context.secondary_keywords[2:4],
-                    "key_points": ["Tools to use", "Step 1 to 4 workflow", "Best practices"],
-                    "recommended_word_count": 350,
-                    "internal_link_opportunities": [],
-                },
-                {
-                    "heading_level": "H2",
-                    "heading_text": "Future Trends and Next Steps",
-                    "target_keywords": [],
-                    "key_points": ["Emerging technologies", "Creator opportunities", "Final thoughts"],
-                    "recommended_word_count": 150,
-                    "internal_link_opportunities": [],
-                },
-            ],
-            eeat_focus_areas=["First-hand testing methodology", "Real product examples", "Authoritative sources"],
-        )
-
-    prompt = build_page_brief_prompt(
-        page_title=context.title,
-        page_url=context.url,
-        page_type=context.page_type,
-        cluster_name=context.cluster,
-        primary_keyword=context.primary_keyword,
-        secondary_keywords=context.secondary_keywords,
-        search_intent=context.search_intent,
-        content_gaps=context.content_gaps,
-        internal_links_outbound=context.outbound_internal_links,
-        target_audience=context.target_audience,
-        site_purpose=context.site_purpose,
-    )
-
-    logger.info(f"Requesting LLM brief generation for '{context.title}'...")
-    brief_data: ContentOutlineResponse = generate_json(
-        prompt=prompt,
-        response_schema=ContentOutlineResponse,
-        system_instruction=PAGE_BRIEF_SYSTEM_PROMPT,
-    )
-    return brief_data
-
-
-def draft_page_content(
+def draft_page_content_from_brief(
     context: PageContext,
-    brief: ContentOutlineResponse,
+    brief: Dict[str, Any],
     dry_run: bool = False,
 ) -> str:
-    """Draft full-length Markdown article based on the outline brief and link specifications."""
+    """Draft full-length Markdown article directly from the generated structured brief."""
     if dry_run:
         logger.info(f"  [DRY-RUN] Drafting markdown content for: {context.title}")
+        h1 = brief.get("h1", context.title)
         md_lines = [
-            f"# {brief.h1_heading}\n",
+            f"# {h1}\n",
             f"*{context.title} is an essential component of modern {context.cluster.lower()}. "
             f"Whether you are exploring {context.primary_keyword or 'new solutions'} or optimizing your workflow, "
             f"this guide provides comprehensive, actionable insights.* \n",
         ]
-        for sec in brief.sections:
-            md_lines.append(f"\n## {sec.heading_text}\n")
+        for sec in brief.get("outline", []):
+            sec_heading = sec.get("heading_text", "")
+            sec_level = sec.get("heading_level", "H2")
+            prefix = "##" if sec_level == "H2" else "###"
+            md_lines.append(f"\n{prefix} {sec_heading}\n")
             md_lines.append(
-                f"When addressing **{sec.heading_text}**, it is important to consider the primary factors that drive quality. "
-                f"Incorporating key elements such as {', '.join(sec.target_keywords) if sec.target_keywords else 'best practices'} "
+                f"When addressing **{sec_heading}**, it is important to consider the primary factors that drive quality. "
+                f"Incorporating key elements such as {', '.join(sec.get('target_keywords', [])) or 'best practices'} "
                 f"ensures consistent, high-performing outcomes across all use cases.\n"
             )
-            for kp in sec.key_points:
+            for kp in sec.get("key_points", []):
                 md_lines.append(f"- **{kp}**: Detailed analysis and actionable recommendation.")
             md_lines.append("")
 
-            # Embed mock internal links
-            if sec.internal_link_opportunities:
-                link_target = sec.internal_link_opportunities[0]
+            if sec.get("internal_link_targets"):
+                link_target = sec["internal_link_targets"][0]
                 matching_link = next(
                     (l for l in context.outbound_internal_links if l.get("target_url") == link_target),
                     None,
@@ -1374,13 +1544,13 @@ def draft_page_content(
 
     prompt = build_drafting_prompt(
         page_title=context.title,
-        h1_heading=brief.h1_heading,
+        h1_heading=brief.get("h1", context.title),
         page_url=context.url,
         page_type=context.page_type,
         cluster_name=context.cluster,
         primary_keyword=context.primary_keyword,
         secondary_keywords=context.secondary_keywords,
-        outline_data=brief.model_dump(),
+        outline_data={"sections": brief.get("outline", [])},
         internal_links=context.outbound_internal_links,
     )
 
@@ -1431,42 +1601,6 @@ def generate_page_faq(context: PageContext, dry_run: bool = False) -> FAQSection
         system_instruction=FAQ_GENERATION_SYSTEM_PROMPT,
     )
     return faq_data
-
-
-def generate_page_metadata(context: PageContext, dry_run: bool = False) -> PageMetadataResponse:
-    """Generate technical SEO Title, Description, and Schema.org metadata."""
-    if dry_run:
-        kw = context.primary_keyword or context.title
-        seo_title = f"{context.title} (2026 Complete Guide)"[:60]
-        meta_desc = f"Discover everything you need to know about {kw}. Step-by-step tips, tool reviews, and actionable styling advice."[:155]
-        return PageMetadataResponse(
-            seo_title=seo_title,
-            meta_description=meta_desc,
-            primary_keyword=context.primary_keyword or context.title,
-            secondary_keywords=context.secondary_keywords[:4],
-            canonical_url=context.url,
-            robots="index, follow" if context.indexable else "noindex, follow",
-            schema_type=context.candidate.technical_seo.schema_type,
-            og_title=seo_title,
-            og_description=meta_desc,
-        )
-
-    prompt = build_metadata_prompt(
-        page_title=context.title,
-        page_url=context.url,
-        primary_keyword=context.primary_keyword,
-        secondary_keywords=context.secondary_keywords,
-        cluster_name=context.cluster,
-        target_audience=context.target_audience,
-    )
-
-    logger.info(f"Generating technical metadata for '{context.title}'...")
-    metadata: PageMetadataResponse = generate_json(
-        prompt=prompt,
-        response_schema=PageMetadataResponse,
-        system_instruction=METADATA_GENERATION_SYSTEM_PROMPT,
-    )
-    return metadata
 
 
 def audit_page_content(
@@ -1521,30 +1655,35 @@ def audit_page_content(
 
 
 # ============================================================
-# STEP 5: SINGLE PAGE ORCHESTRATION & COMPOSITION
+# STEP 6: SINGLE PAGE ORCHESTRATION & COMPOSITION
 # ============================================================
 
 def compose_complete_markdown_page(
     context: PageContext,
-    metadata: PageMetadataResponse,
+    brief: Dict[str, Any],
     article_md: str,
     faq: FAQSectionResponse,
 ) -> str:
     """Compose the final unified markdown document with YAML frontmatter, body, and FAQ."""
-    sec_kws_formatted = json.dumps(metadata.secondary_keywords)
-    safe_title = metadata.seo_title.replace('"', '\\"')
-    safe_desc = metadata.meta_description.replace('"', '\\"')
+    sec_kws = brief.get("secondary_keywords", context.secondary_keywords)
+    sec_kws_formatted = json.dumps(sec_kws)
+    safe_title = brief.get("meta_title", context.title).replace('"', '\\"')
+    safe_desc = brief.get("meta_description", "").replace('"', '\\"')
+    canonical = brief.get("canonical_url", context.canonical_url)
+    schema_type = brief.get("schema_type", context.candidate.technical_seo.schema_type)
+    p_kw = brief.get("primary_keyword") or context.primary_keyword or ""
+
     frontmatter = f"""---
 title: "{safe_title}"
 description: "{safe_desc}"
 url: "{context.url}"
-canonical: "{metadata.canonical_url}"
-robots: "{metadata.robots}"
-primary_keyword: "{metadata.primary_keyword}"
+canonical: "{canonical}"
+robots: "{context.candidate.technical_seo.robots}"
+primary_keyword: "{p_kw}"
 secondary_keywords: {sec_kws_formatted}
 cluster: "{context.cluster}"
 page_type: "{context.page_type}"
-schema_type: "{metadata.schema_type}"
+schema_type: "{schema_type}"
 generated_at: "{datetime.now(timezone.utc).isoformat()}"
 ---
 
@@ -1558,11 +1697,12 @@ generated_at: "{datetime.now(timezone.utc).isoformat()}"
     return frontmatter + article_md.strip() + faq_block
 
 
-def process_single_page(
+def process_single_page_from_brief(
     context: PageContext,
+    brief: Dict[str, Any],
     dry_run: bool = False,
 ) -> GeneratedPageResult:
-    """Execute the end-to-end content generation pipeline for a single page."""
+    """Execute the end-to-end content generation pipeline for a single page from its brief."""
     logger.info(f"\n==================================================")
     logger.info(f"Processing Page: {context.title} ({context.url})")
     logger.info(f"Primary Keyword: '{context.primary_keyword}' | Type: {context.page_type}")
@@ -1577,30 +1717,32 @@ def process_single_page(
         cluster=context.cluster,
         primary_keyword=context.primary_keyword,
         secondary_keywords=context.secondary_keywords,
+        brief=brief,
     )
 
     try:
-        # 1. Generate Content Brief & Outline
-        brief = generate_page_brief(context, dry_run=dry_run)
-        result.brief = brief.model_dump()
+        # 1. Draft Article Body Markdown using the brief
+        article_md = draft_page_content_from_brief(context, brief, dry_run=dry_run)
 
-        # 2. Draft Article Body Markdown
-        article_md = draft_page_content(context, brief, dry_run=dry_run)
-
-        # 3. Generate FAQ Block
+        # 2. Generate FAQ Block
         faq = generate_page_faq(context, dry_run=dry_run)
         result.faq = faq.model_dump()
 
-        # 4. Generate Technical Metadata
-        meta = generate_page_metadata(context, dry_run=dry_run)
-        result.metadata = meta.model_dump()
+        # 3. Use metadata from brief
+        result.metadata = {
+            "seo_title": brief.get("meta_title", context.title),
+            "meta_description": brief.get("meta_description", ""),
+            "canonical_url": brief.get("canonical_url", context.canonical_url),
+            "schema_type": brief.get("schema_type", context.candidate.technical_seo.schema_type),
+            "robots": context.candidate.technical_seo.robots,
+        }
 
-        # 5. Compose Full Page (Frontmatter + Markdown + FAQ)
-        full_markdown = compose_complete_markdown_page(context, meta, article_md, faq)
+        # 4. Compose Full Page (Frontmatter + Markdown + FAQ)
+        full_markdown = compose_complete_markdown_page(context, brief, article_md, faq)
         result.markdown_content = full_markdown
         result.word_count = len(re.findall(r"\b\w+\b", full_markdown))
 
-        # 6. Quality & SEO Compliance Audit
+        # 5. Quality & SEO Compliance Audit
         audit = audit_page_content(context, full_markdown, dry_run=dry_run)
         result.audit = audit.model_dump()
 
@@ -1616,7 +1758,7 @@ def process_single_page(
 
 
 # ============================================================
-# STEP 6: ARTIFACT SERIALIZATION & REPOSITORIES
+# STEP 7: ARTIFACT SERIALIZATION & REPOSITORIES
 # ============================================================
 
 def save_generated_page(result: GeneratedPageResult, pages_dir: Path) -> Tuple[Path, Path]:
@@ -1719,7 +1861,7 @@ def export_content_manifest(
 
 
 # ============================================================
-# STEP 7: MAIN PIPELINE RUNNER
+# STEP 8: MAIN PIPELINE RUNNER
 # ============================================================
 
 def run_content_generation_phase(
@@ -1729,27 +1871,16 @@ def run_content_generation_phase(
     output_dir: Optional[Path] = None,
     candidates_only: bool = False,
     select_only: bool = False,
+    briefs_only: bool = False,
     selection_config: Optional[FirstWaveSelectionConfig] = None,
 ) -> Dict[str, Any]:
     """
     Main entry point for v0.3 Content Generation Phase.
-
-    Args:
-        dry_run: When True, uses deterministic mock generation instead of live LLM API calls.
-        target_slug: Optional slug filter to generate a single specific page.
-        max_pages: Optional limit on the number of pages to generate in this run.
-        output_dir: Custom destination directory for v0.3 outputs (defaults to outputs/v03).
-        candidates_only: When True, builds and saves page_candidates.json without selecting or generating.
-        select_only: When True, builds candidates and runs First-Wave selection without generating content.
-        selection_config: Optional custom configuration for First-Wave selection.
-
-    Returns:
-        Summary dict containing counts, artifacts paths, and execution status.
     """
     configure_logging()
     logger.info("==========================================================")
     logger.info("STARTING V0.3 CONTENT GENERATION PIPELINE")
-    logger.info(f"Candidates only: {candidates_only} | Select only: {select_only} | Dry-run mode: {dry_run}")
+    logger.info(f"Candidates only: {candidates_only} | Select only: {select_only} | Briefs only: {briefs_only} | Dry-run: {dry_run}")
     logger.info("==========================================================")
 
     out_dir = output_dir or V03_OUTPUTS_DIR
@@ -1799,12 +1930,36 @@ def run_content_generation_phase(
             "total_selected": len(selection_manifest.selected_pages),
         }
 
-    # 4. Compile page contexts from selected candidates
-    selected_ids = {p.candidate_id for p in selection_manifest.selected_pages}
-    chosen_candidates = [
-        c for c in candidates_manifest.candidates if c.candidate_id in selected_ids
+    # 4. Generate Structured Content Briefs
+    briefs_manifest, briefs_file = generate_all_content_briefs(
+        selected_manifest=selection_manifest,
+        candidates_manifest=candidates_manifest,
+        dry_run=dry_run,
+        output_path=out_dir / "content_briefs.json",
+    )
+
+    if briefs_only:
+        logger.info("\n==========================================================")
+        logger.info("CONTENT BRIEFS GENERATION COMPLETE (Briefs-Only Mode)")
+        logger.info(f"  Briefs file:   {briefs_file}")
+        logger.info(f"  Total Briefs:  {len(briefs_manifest.get('briefs', []))}")
+        logger.info("==========================================================")
+        return {
+            "status": "success",
+            "mode": "briefs_only",
+            "content_briefs_file": str(briefs_file),
+            "total_briefs": len(briefs_manifest.get("briefs", [])),
+        }
+
+    # 5. Compile page contexts from selected candidates & match with briefs
+    candidate_map = {c.candidate_id: c for c in candidates_manifest.candidates}
+    briefs_map = {b["page_id"]: b for b in briefs_manifest.get("briefs", [])}
+
+    page_contexts = [
+        PageContext(candidate=candidate_map[p.candidate_id])
+        for p in selection_manifest.selected_pages
+        if p.candidate_id in candidate_map
     ]
-    page_contexts = [PageContext(candidate=c) for c in chosen_candidates]
 
     # Apply slug filter if requested
     if target_slug:
@@ -1812,15 +1967,16 @@ def run_content_generation_phase(
         if not page_contexts:
             logger.warning(f"No selected pages matched the target slug '{target_slug}'.")
 
-    # 5. Process pages
+    # 6. Process and draft pages
     results: List[GeneratedPageResult] = []
     for idx, ctx in enumerate(page_contexts, start=1):
         logger.info(f"\n[Page {idx}/{len(page_contexts)}]")
-        res = process_single_page(ctx, dry_run=dry_run)
+        matched_brief = briefs_map.get(ctx.page_id) or generate_structured_content_brief(ctx, dry_run=dry_run)
+        res = process_single_page_from_brief(ctx, matched_brief, dry_run=dry_run)
         save_generated_page(res, pages_dir)
         results.append(res)
 
-    # 6. Export Manifest & Summary Report
+    # 7. Export Manifest & Summary Report
     manifest_path = export_content_manifest(results, out_dir)
     report_path = generate_v03_summary_report(results, out_dir)
 
@@ -1828,6 +1984,7 @@ def run_content_generation_phase(
     logger.info("V0.3 CONTENT GENERATION COMPLETED")
     logger.info(f"  Candidates: {candidates_file}")
     logger.info(f"  Selected:   {selected_file}")
+    logger.info(f"  Briefs:     {briefs_file}")
     logger.info(f"  Manifest:   {manifest_path}")
     logger.info(f"  Report:     {report_path}")
     logger.info(f"  Pages Saved In: {pages_dir}")
@@ -1839,6 +1996,7 @@ def run_content_generation_phase(
         "completed": len([r for r in results if r.status == "completed"]),
         "page_candidates_file": str(candidates_file),
         "selected_pages_file": str(selected_file),
+        "content_briefs_file": str(briefs_file),
         "manifest_path": str(manifest_path),
         "report_path": str(report_path),
         "output_directory": str(out_dir),
@@ -1852,7 +2010,7 @@ def run_content_generation_phase(
 def main():
     """Command-line interface for running the v0.3 content generation pipeline."""
     parser = argparse.ArgumentParser(
-        description="v0.3 Content Generation Pipeline & First-Wave Page Selector",
+        description="v0.3 Content Generation Pipeline & Content Brief Generator",
     )
     parser.add_argument(
         "--candidates-only",
@@ -1862,7 +2020,12 @@ def main():
     parser.add_argument(
         "--select-only",
         action="store_true",
-        help="Run candidate building and First-Wave page selection without generating content",
+        help="Run candidate building and First-Wave page selection without generating briefs or content",
+    )
+    parser.add_argument(
+        "--briefs-only",
+        action="store_true",
+        help="Generate structured content_briefs.json without drafting articles",
     )
     parser.add_argument(
         "--min-pages",
@@ -1917,6 +2080,7 @@ def main():
             max_pages=args.max_pages,
             candidates_only=args.candidates_only,
             select_only=args.select_only,
+            briefs_only=args.briefs_only,
             selection_config=selection_config,
         )
     except Exception as e:

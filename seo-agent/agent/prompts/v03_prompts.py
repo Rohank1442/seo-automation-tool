@@ -5,7 +5,7 @@ This module defines the Pydantic models, system instructions, and structured
 prompt builders used during the v0.3 content generation phase.
 
 Key Responsibilities:
-- Page Brief / Content Outline generation
+- Comprehensive Structured Content Brief generation (Gemini structured JSON)
 - Section-by-section long-form content drafting
 - FAQ & Structured Data generation
 - Technical SEO metadata generation (Title, Description, Schema)
@@ -45,6 +45,126 @@ class SectionBrief(BaseModel):
     internal_link_opportunities: List[str] = Field(
         default_factory=list,
         description="Target URLs or anchor concepts to link to from this section.",
+    )
+
+
+class OutlineSection(BaseModel):
+    """Detailed specification for an H2/H3 outline section in a structured content brief."""
+
+    heading_level: str = Field(
+        default="H2",
+        description="Heading level ('H2' or 'H3').",
+    )
+    heading_text: str = Field(
+        description="Text of the section heading.",
+    )
+    target_keywords: List[str] = Field(
+        default_factory=list,
+        description="Primary and secondary keywords to address in this section.",
+    )
+    key_points: List[str] = Field(
+        default_factory=list,
+        description="Core bullet points, concepts, or data to cover.",
+    )
+    recommended_word_count: int = Field(
+        default=250,
+        description="Target word count for this section.",
+    )
+    internal_link_targets: List[str] = Field(
+        default_factory=list,
+        description="Target URLs to link to naturally from this section.",
+    )
+
+
+class ContentBriefInternalLink(BaseModel):
+    """Specification of an internal link to place within the drafted content."""
+
+    target_url: str = Field(
+        description="Target URL to link to.",
+    )
+    anchor_text: str = Field(
+        description="Recommended descriptive anchor text.",
+    )
+    relationship: str = Field(
+        default="related",
+        description="Link relationship (e.g., 'cluster_parent', 'cluster_child', 'related').",
+    )
+    placement_context: str = Field(
+        description="Section or topical context where this link belongs naturally.",
+    )
+
+
+class ContentRequirements(BaseModel):
+    """Rigorous content formatting, word count, and E-E-A-T requirements."""
+
+    estimated_word_count: int = Field(
+        default=1200,
+        description="Estimated total word count required for high search ranking.",
+    )
+    target_audience: str = Field(
+        description="Audience persona and search intent characteristics.",
+    )
+    tone_of_voice: str = Field(
+        default="Authoritative, practical, engaging, and clear",
+        description="Tone of voice guidelines.",
+    )
+    required_formatting_elements: List[str] = Field(
+        default_factory=list,
+        description="Required elements: e.g. 'Comparison table', 'Step-by-step numbered workflow', 'FAQ block'.",
+    )
+    eeat_signals: List[str] = Field(
+        default_factory=list,
+        description="First-hand experience indicators, expert criteria, and trust markers to establish E-E-A-T.",
+    )
+
+
+class StructuredContentBriefResponse(BaseModel):
+    """
+    Complete, publication-ready Content Brief generated via Gemini Structured JSON.
+    Contains all strategic on-page SEO, structural, and technical metadata.
+    """
+
+    primary_keyword: Optional[str] = Field(
+        default=None,
+        description="Primary target keyword for the page.",
+    )
+    secondary_keywords: List[str] = Field(
+        default_factory=list,
+        description="Secondary and semantic supporting keywords.",
+    )
+    search_intent: str = Field(
+        description="Primary search intent: 'informational', 'commercial', 'transactional', or 'mixed'.",
+    )
+    title_recommendation: str = Field(
+        description="Recommended working editorial title for the article.",
+    )
+    h1: str = Field(
+        description="The single H1 heading for the page.",
+    )
+    meta_title: str = Field(
+        description="SEO Title tag (50-60 characters, includes primary keyword).",
+    )
+    meta_description: str = Field(
+        description="Compelling meta description (130-155 characters, includes primary keyword and CTA).",
+    )
+    schema_type: str = Field(
+        default="Article",
+        description="Recommended Schema.org type (e.g. 'Article', 'HowTo', 'FAQPage', 'CollectionPage').",
+    )
+    outline: List[OutlineSection] = Field(
+        default_factory=list,
+        description="Ordered H2/H3 section outline covering the entire topic comprehensively.",
+    )
+    questions_to_answer: List[str] = Field(
+        default_factory=list,
+        description="Direct questions from searchers / PAA that must be explicitly answered.",
+    )
+    content_requirements: ContentRequirements = Field(
+        description="Editorial, structural, and E-E-A-T requirements for the writer.",
+    )
+    internal_link_targets: List[ContentBriefInternalLink] = Field(
+        default_factory=list,
+        description="Target internal links to embed naturally in the article.",
     )
 
 
@@ -204,6 +324,25 @@ class ContentQualityAuditResponse(BaseModel):
 # SYSTEM INSTRUCTIONS
 # ============================================================
 
+STRUCTURED_CONTENT_BRIEF_SYSTEM_PROMPT = """You are an elite Search Engine Optimization Director and Principal Information Architect.
+Your task is to generate a comprehensive, publication-ready Structured Content Brief for a target SEO page.
+
+Brief Guidelines:
+1. Search Intent & Title: Recommend an enticing, click-worthy title and an exact H1 heading satisfying search intent.
+2. Metadata Excellence:
+   - meta_title: 50-60 characters. Place primary keyword near the beginning.
+   - meta_description: 130-155 characters. Active voice, clear value proposition, primary keyword included, clear call-to-action.
+3. Schema Type: Assign the most fitting Schema.org type (Article, HowTo, FAQPage, CollectionPage).
+4. Outline (H2 / H3):
+   - Design 4 to 7 comprehensive H2 sections with nested H3s where appropriate.
+   - Assign primary and secondary keywords strategically to relevant sections.
+   - Plan specific internal link placements with descriptive anchor text.
+5. Questions to Answer: Include 3 to 6 high-value questions from user search queries and PAA.
+6. Content Requirements: Specify target word count (1200-2000), tone, formatting (tables, lists, callouts), and specific E-E-A-T trust signals.
+
+Return strict JSON adhering to the StructuredContentBriefResponse schema.
+"""
+
 PAGE_BRIEF_SYSTEM_PROMPT = """You are an elite SEO Content Strategist and Information Architect.
 Your task is to produce a rigorous, publication-ready Content Brief and Outline for a single SEO page.
 
@@ -267,6 +406,67 @@ Provide an honest numerical score (0-100) and actionable feedback.
 # ============================================================
 # PROMPT BUILDERS
 # ============================================================
+
+def build_structured_content_brief_prompt(
+    page_title: str,
+    page_url: str,
+    page_type: str,
+    cluster_name: str,
+    primary_keyword: Optional[str],
+    secondary_keywords: List[str],
+    search_intent: str,
+    target_audience: str,
+    site_purpose: str,
+    content_gaps: List[Dict[str, Any]],
+    internal_links_outbound: List[Dict[str, Any]],
+    research_questions: List[str],
+    recommended_word_count: int = 1200,
+) -> str:
+    """Build prompt for generating a comprehensive Structured Content Brief via Gemini JSON."""
+    gaps_formatted = "\n".join(
+        f"- {g.get('topic', 'Gap')}: {g.get('reason', '')} (Format: {g.get('missing_format', 'N/A')})"
+        for g in content_gaps[:4]
+    ) if content_gaps else "None specified."
+
+    links_formatted = "\n".join(
+        f"- Target URL: '{link.get('target_url', '')}' (Recommended anchor: '{link.get('anchor_text', '')}', Relationship: '{link.get('relationship', '')}')"
+        for link in internal_links_outbound[:8]
+    ) if internal_links_outbound else "No specific outbound internal links required."
+
+    questions_formatted = "\n".join(
+        f"- {q}" for q in research_questions[:6]
+    ) if research_questions else "None specified."
+
+    sec_kws_str = ", ".join(secondary_keywords) if secondary_keywords else "None"
+
+    return f"""Generate a comprehensive, structured SEO Content Brief for the following page:
+
+TARGET PAGE SPECIFICATIONS:
+- Working Page Title: {page_title}
+- Target URL Path: {page_url}
+- Page Format Type: {page_type}
+- Topical Cluster: {cluster_name}
+- Search Intent: {search_intent}
+- Target Audience: {target_audience}
+- Site Purpose: {site_purpose}
+- Target Word Count: ~{recommended_word_count} words
+
+KEYWORD TARGETS:
+- Primary Keyword: {primary_keyword or 'Topical Overview'}
+- Secondary Keywords: {sec_kws_str}
+
+COMPETITOR GAPS TO CAPITALIZE ON:
+{gaps_formatted}
+
+IDENTIFIED USER SEARCH QUESTIONS & PAAs:
+{questions_formatted}
+
+REQUIRED INTERNAL LINKS (MUST BE INCLUDED IN BRIEF):
+{links_formatted}
+
+Generate a complete StructuredContentBriefResponse JSON with title_recommendation, h1, meta_title, meta_description, schema_type, detailed outline (H2/H3), questions_to_answer, content_requirements, and internal_link_targets.
+"""
+
 
 def build_page_brief_prompt(
     page_title: str,
@@ -332,7 +532,7 @@ def build_drafting_prompt(
     site_name: str = "Our Platform",
 ) -> str:
     """Build user prompt for drafting complete article content in Markdown."""
-    sections = outline_data.get("sections", [])
+    sections = outline_data.get("sections", outline_data.get("outline", []))
     sections_str = "\n".join(
         f"### {s.get('heading_level', 'H2')}: {s.get('heading_text', '')}\n"
         f"Target Keywords: {', '.join(s.get('target_keywords', []))}\n"

@@ -1,0 +1,114 @@
+{
+  "version": "0.2",
+  "audit_method": "gemini_group_critic",
+  "summary": {
+    "total_groups": 8,
+    "approved": 5,
+    "review": 2,
+    "split": 1
+  },
+  "clusters": [
+    {
+      "cluster": "Virtual Try-On Tech",
+      "audits": [
+        {
+          "group_id": "what-is-virtual-try-on",
+          "status": "approved",
+          "confidence": 0.95,
+          "intent_consistent": true,
+          "topic_coherent": true,
+          "potential_outliers": [],
+          "issues": [],
+          "recommendation": "Keep as one page."
+        },
+        {
+          "group_id": "best-virtual-try-on-apps",
+          "status": "review",
+          "confidence": 0.8,
+          "intent_consistent": false,
+          "topic_coherent": true,
+          "potential_outliers": [
+            "virtual try on clothes online a fitroom app editor"
+          ],
+          "issues": [
+            "Contains a navigational query referencing a specific named app ('fitroom app editor') mixed in with generic discovery queries."
+          ],
+          "recommendation": "Review manually to remove or separate the branded navigational keyword from the generic listicle group."
+        },
+        {
+          "group_id": "virtual-clothing-design-apps",
+          "status": "split",
+          "confidence": 0.4,
+          "intent_consistent": false,
+          "topic_coherent": true,
+          "potential_outliers": [
+            "virtual dress designer tutorial",
+            "how to make clothes online",
+            "how to design clothes online",
+            "how to create clothes online",
+            "how to design clothes online for free",
+            "what apps do designers use"
+          ],
+          "issues": [
+            "Combines informational how-to design guides/tutorials with commercial software and app roundups."
+          ],
+          "recommendation": "Split into two separate groups: a commercial listicle for clothing design apps and an informational how-to guide for designing clothes online."
+        },
+        {
+          "group_id": "outfit-planner-apps",
+          "status": "approved",
+          "confidence": 0.95,
+          "intent_consistent": true,
+          "topic_coherent": true,
+          "potential_outliers": [],
+          "issues": [],
+          "recommendation": "Keep as one page."
+        },
+        {
+          "group_id": "best-online-clothes-shopping-apps",
+          "status": "approved",
+          "confidence": 0.95,
+          "intent_consistent": true,
+          "topic_coherent": true,
+          "potential_outliers": [],
+          "issues": [],
+          "recommendation": "Keep as one page."
+        },
+        {
+          "group_id": "where-to-buy-clothes-online",
+          "status": "review",
+          "confidence": 0.75,
+          "intent_consistent": false,
+          "topic_coherent": true,
+          "potential_outliers": [
+            "how to order clothing online"
+          ],
+          "issues": [
+            "'how to order clothing online' is an informational process query mixed with transactional destination queries."
+          ],
+          "recommendation": "Review whether 'how to order clothing online' should be split into a separate beginner guide or addressed in a dedicated sub-section."
+        },
+        {
+          "group_id": "how-to-get-free-clothes-online",
+          "status": "approved",
+          "confidence": 1.0,
+          "intent_consistent": true,
+          "topic_coherent": true,
+          "potential_outliers": [],
+          "issues": [],
+          "recommendation": "Keep as one page."
+        },
+        {
+          "group_id": "how-to-get-clothes-to-sell-online",
+          "status": "approved",
+          "confidence": 1.0,
+          "intent_consistent": true,
+          "topic_coherent": true,
+          "potential_outliers": [],
+          "issues": [],
+          "recommendation": "Keep as one page."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,558 @@
+{
+  "version": "0.3",
+  "phase": "first_wave_page_selection",
+  "generated_at": "2026-08-27T14:04:19.345467+00:00",
+  "config": {
+    "min_pages": 10,
+    "max_pages": 20,
+    "target_count": null,
+    "include_cluster_hubs": true,
+    "audit_weight": 0.25,
+    "long_tail_weight": 0.2,
+    "low_competition_weight": 0.15,
+    "content_gap_weight": 0.2,
+    "intent_clarity_weight": 0.1,
+    "cluster_diversity_weight": 0.1,
+    "min_score_threshold": 0.0,
+    "allowed_intents": null,
+    "allowed_page_types": null
+  },
+  "summary": {
+    "total_candidates_evaluated": 10,
+    "total_pages_selected": 10,
+    "cluster_pages_selected": 1,
+    "content_pages_selected": 9,
+    "average_selection_score": 0.8294,
+    "clusters_represented": [
+      "Virtual Try-On Tech"
+    ],
+    "intent_distribution": {
+      "informational": 4,
+      "commercial": 4,
+      "mixed": 1,
+      "transactional": 1
+    },
+    "page_type_distribution": {
+      "guide": 4,
+      "informational": 1,
+      "listicle": 4,
+      "cluster": 1
+    }
+  },
+  "selected_pages": [
+    {
+      "rank": 1,
+      "candidate_id": "page:how-to-get-free-clothes-online",
+      "title": "How To Get Free Clothes Online",
+      "slug": "how-to-get-free-clothes-online",
+      "url": "/how-to-get-free-clothes-online/",
+      "page_type": "guide",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "how to get free clothes online",
+      "secondary_keywords": [],
+      "search_intent": "informational",
+      "priority": "medium",
+      "score": 0.8725,
+      "score_breakdown": {
+        "audit_score": 1.0,
+        "long_tail_score": 1.0,
+        "low_competition_score": 0.85,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.8725,
+        "reasons": [
+          "Approved keyword group (confidence: 1.00)",
+          "Deep long-tail primary query (6 words)",
+          "Addresses 1 target question queries",
+          "Informational / how-to intent (high early rankability)",
+          "Definitive informational intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Approved keyword group (confidence: 1.00); Deep long-tail primary query (6 words); Addresses 1 target question queries",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/how-to-design-clothes-online/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/where-to-buy-clothes-online/",
+        "/how-to-get-clothes-to-sell-online/"
+      ],
+      "target_questions": [
+        "how to get free clothes online"
+      ]
+    },
+    {
+      "rank": 2,
+      "candidate_id": "page:how-to-get-clothes-to-sell-online",
+      "title": "How To Get Clothes To Sell Online",
+      "slug": "how-to-get-clothes-to-sell-online",
+      "url": "/how-to-get-clothes-to-sell-online/",
+      "page_type": "guide",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "how to get clothes to sell online",
+      "secondary_keywords": [],
+      "search_intent": "informational",
+      "priority": "medium",
+      "score": 0.8725,
+      "score_breakdown": {
+        "audit_score": 1.0,
+        "long_tail_score": 1.0,
+        "low_competition_score": 0.85,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.8725,
+        "reasons": [
+          "Approved keyword group (confidence: 1.00)",
+          "Deep long-tail primary query (7 words)",
+          "Addresses 1 target question queries",
+          "Informational / how-to intent (high early rankability)",
+          "Definitive informational intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Approved keyword group (confidence: 1.00); Deep long-tail primary query (7 words); Addresses 1 target question queries",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/how-to-design-clothes-online/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/where-to-buy-clothes-online/",
+        "/how-to-get-free-clothes-online/"
+      ],
+      "target_questions": [
+        "how to get clothes to sell online"
+      ]
+    },
+    {
+      "rank": 3,
+      "candidate_id": "page:what-is-virtual-try-on",
+      "title": "What Is Virtual Try On",
+      "slug": "what-is-virtual-try-on",
+      "url": "/what-is-virtual-try-on/",
+      "page_type": "guide",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "what is virtual try on",
+      "secondary_keywords": [
+        "virtual try-on tech",
+        "can you virtually try on clothes",
+        "how to try on clothes online",
+        "how to try on clothes virtually online"
+      ],
+      "search_intent": "informational",
+      "priority": "medium",
+      "score": 0.8706,
+      "score_breakdown": {
+        "audit_score": 0.992,
+        "long_tail_score": 1.0,
+        "low_competition_score": 0.85,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.8706,
+        "reasons": [
+          "Approved keyword group (confidence: 0.95)",
+          "Deep long-tail primary query (5 words)",
+          "Addresses 4 target question queries",
+          "Informational / how-to intent (high early rankability)",
+          "Definitive informational intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Approved keyword group (confidence: 0.95); Deep long-tail primary query (5 words); Addresses 4 target question queries",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/best-virtual-try-on-clothing-apps/",
+        "/apps-to-design-clothing/",
+        "/how-to-design-clothes-online/",
+        "/app-to-plan-outfits/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/where-to-buy-clothes-online/"
+      ],
+      "target_questions": [
+        "what is virtual try on",
+        "can you virtually try on clothes",
+        "how to try on clothes online",
+        "how to try on clothes virtually online"
+      ]
+    },
+    {
+      "rank": 4,
+      "candidate_id": "page:how-to-design-clothes-online",
+      "title": "How To Design Clothes Online",
+      "slug": "how-to-design-clothes-online",
+      "url": "/how-to-design-clothes-online/",
+      "page_type": "informational",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "how to design clothes online",
+      "secondary_keywords": [
+        "how to make clothes online",
+        "how to create clothes online",
+        "how to design clothes online for free",
+        "virtual dress designer tutorial"
+      ],
+      "search_intent": "informational",
+      "priority": "medium",
+      "score": 0.8687,
+      "score_breakdown": {
+        "audit_score": 0.985,
+        "long_tail_score": 1.0,
+        "low_competition_score": 0.85,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.8687,
+        "reasons": [
+          "Approved keyword group (confidence: 0.90)",
+          "Deep long-tail primary query (5 words)",
+          "Addresses 1 target question queries",
+          "Informational / how-to intent (high early rankability)",
+          "Definitive informational intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Approved keyword group (confidence: 0.90); Deep long-tail primary query (5 words); Addresses 1 target question queries",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/what-is-virtual-try-on/",
+        "/best-virtual-try-on-clothing-apps/",
+        "/apps-to-design-clothing/",
+        "/app-to-plan-outfits/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/where-to-buy-clothes-online/",
+        "/how-to-get-free-clothes-online/",
+        "/how-to-get-clothes-to-sell-online/"
+      ],
+      "target_questions": [
+        "how to design clothes online"
+      ]
+    },
+    {
+      "rank": 5,
+      "candidate_id": "page:best-online-clothes-shopping-apps",
+      "title": "Best Online Shopping Apps For Clothes",
+      "slug": "best-online-shopping-apps-for-clothes",
+      "url": "/best-online-shopping-apps-for-clothes/",
+      "page_type": "listicle",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "best online shopping apps for clothes",
+      "secondary_keywords": [
+        "online clothes shopping apps",
+        "which app is best for clothing",
+        "which is the best online clothing app",
+        "which shopping app is best for clothes",
+        "best clothes shopping apps",
+        "which app is best for online clothes shopping",
+        "which app best for online shopping",
+        "which app is best for online dress shopping"
+      ],
+      "search_intent": "commercial",
+      "priority": "medium",
+      "score": 0.8556,
+      "score_breakdown": {
+        "audit_score": 0.992,
+        "long_tail_score": 1.0,
+        "low_competition_score": 0.75,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.8556,
+        "reasons": [
+          "Approved keyword group (confidence: 0.95)",
+          "Deep long-tail primary query (6 words)",
+          "Addresses 6 target question queries",
+          "Commercial listicle intent",
+          "Definitive commercial intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Approved keyword group (confidence: 0.95); Deep long-tail primary query (6 words); Addresses 6 target question queries",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/what-is-virtual-try-on/",
+        "/best-virtual-try-on-clothing-apps/",
+        "/apps-to-design-clothing/",
+        "/how-to-design-clothes-online/",
+        "/app-to-plan-outfits/",
+        "/where-to-buy-clothes-online/",
+        "/how-to-get-free-clothes-online/",
+        "/how-to-get-clothes-to-sell-online/"
+      ],
+      "target_questions": [
+        "which app is best for clothing",
+        "which is the best online clothing app",
+        "which shopping app is best for clothes",
+        "which app is best for online clothes shopping",
+        "which app best for online shopping",
+        "which app is best for online dress shopping"
+      ]
+    },
+    {
+      "rank": 6,
+      "candidate_id": "cluster:virtual-try-on-tech",
+      "title": "Virtual Try-On Tech",
+      "slug": "virtual-try-on-tech",
+      "url": "/virtual-try-on-tech/",
+      "page_type": "cluster",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": null,
+      "secondary_keywords": [],
+      "search_intent": "mixed",
+      "priority": "high",
+      "score": 0.8275,
+      "score_breakdown": {
+        "audit_score": 1.0,
+        "long_tail_score": 0.65,
+        "low_competition_score": 0.65,
+        "content_gap_score": 0.85,
+        "intent_clarity_score": 0.8,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.8275,
+        "reasons": [
+          "Cluster hub page (full audit alignment)",
+          "Broad cluster hub keyword scope",
+          "High architectural priority",
+          "Cluster hub mixed navigational/informational intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Cluster hub page (full audit alignment); Broad cluster hub keyword scope; High architectural priority",
+      "internal_link_targets": [
+        "/what-is-virtual-try-on/",
+        "/best-virtual-try-on-clothing-apps/",
+        "/apps-to-design-clothing/",
+        "/how-to-design-clothes-online/",
+        "/app-to-plan-outfits/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/where-to-buy-clothes-online/",
+        "/how-to-get-free-clothes-online/",
+        "/how-to-get-clothes-to-sell-online/"
+      ],
+      "target_questions": []
+    },
+    {
+      "rank": 7,
+      "candidate_id": "page:outfit-planner-apps",
+      "title": "App To Plan Outfits",
+      "slug": "app-to-plan-outfits",
+      "url": "/app-to-plan-outfits/",
+      "page_type": "listicle",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "app to plan outfits",
+      "secondary_keywords": [
+        "app to create outfit looks",
+        "app to make outfits",
+        "apps to choose outfits",
+        "ai what to wear app",
+        "ai app for clothes",
+        "app that can make outfits"
+      ],
+      "search_intent": "commercial",
+      "priority": "medium",
+      "score": 0.8256,
+      "score_breakdown": {
+        "audit_score": 0.992,
+        "long_tail_score": 0.85,
+        "low_competition_score": 0.75,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.8256,
+        "reasons": [
+          "Approved keyword group (confidence: 0.95)",
+          "Strong long-tail primary query (4 words)",
+          "Commercial listicle intent",
+          "Definitive commercial intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Approved keyword group (confidence: 0.95); Strong long-tail primary query (4 words); Commercial listicle intent",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/what-is-virtual-try-on/",
+        "/best-virtual-try-on-clothing-apps/",
+        "/apps-to-design-clothing/",
+        "/how-to-design-clothes-online/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/where-to-buy-clothes-online/"
+      ],
+      "target_questions": []
+    },
+    {
+      "rank": 8,
+      "candidate_id": "page:where-to-buy-clothes-online",
+      "title": "Where To Buy Clothes Online",
+      "slug": "where-to-buy-clothes-online",
+      "url": "/where-to-buy-clothes-online/",
+      "page_type": "guide",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "where to buy clothes online",
+      "secondary_keywords": [
+        "where to buy clothes from online",
+        "where to buy quality clothing online",
+        "how to order clothing online"
+      ],
+      "search_intent": "transactional",
+      "priority": "medium",
+      "score": 0.8006,
+      "score_breakdown": {
+        "audit_score": 0.712,
+        "long_tail_score": 1.0,
+        "low_competition_score": 0.85,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.8006,
+        "reasons": [
+          "Group in review status",
+          "Deep long-tail primary query (5 words)",
+          "Addresses 4 target question queries",
+          "Informational / how-to intent (high early rankability)",
+          "Definitive transactional intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Group in review status; Deep long-tail primary query (5 words); Addresses 4 target question queries",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/what-is-virtual-try-on/",
+        "/best-virtual-try-on-clothing-apps/",
+        "/apps-to-design-clothing/",
+        "/how-to-design-clothes-online/",
+        "/app-to-plan-outfits/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/how-to-get-free-clothes-online/",
+        "/how-to-get-clothes-to-sell-online/"
+      ],
+      "target_questions": [
+        "where to buy clothes online",
+        "where to buy clothes from online",
+        "where to buy quality clothing online",
+        "how to order clothing online"
+      ]
+    },
+    {
+      "rank": 9,
+      "candidate_id": "page:best-virtual-try-on-apps",
+      "title": "Best Virtual Try On Clothing Apps",
+      "slug": "best-virtual-try-on-clothing-apps",
+      "url": "/best-virtual-try-on-clothing-apps/",
+      "page_type": "listicle",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "best virtual try on clothing apps",
+      "secondary_keywords": [
+        "apps that let you try on clothes",
+        "ai app to try on clothes",
+        "best virtual try on clothes app",
+        "virtual try on clothes online a fitroom app editor",
+        "virtual try on clothes online free ai",
+        "virtual try on clothes online ai",
+        "try on clothes virtually online free",
+        "free ai platform to change outfits",
+        "try on clothes virtually online",
+        "change outfits with ai free",
+        "try on clothes online virtual model",
+        "virtual dressing room app",
+        "best ai app to try on clothes",
+        "ai app to try on outfits",
+        "apps to try on clothes",
+        "virtual try on clothes online free no sign up",
+        "virtual dressing room for party dresses"
+      ],
+      "search_intent": "commercial",
+      "priority": "medium",
+      "score": 0.7775,
+      "score_breakdown": {
+        "audit_score": 0.72,
+        "long_tail_score": 0.95,
+        "low_competition_score": 0.75,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.7775,
+        "reasons": [
+          "Group in review status",
+          "Deep long-tail primary query (6 words)",
+          "Commercial listicle intent",
+          "Definitive commercial intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Group in review status; Deep long-tail primary query (6 words); Commercial listicle intent",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/what-is-virtual-try-on/",
+        "/apps-to-design-clothing/",
+        "/how-to-design-clothes-online/",
+        "/app-to-plan-outfits/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/where-to-buy-clothes-online/"
+      ],
+      "target_questions": []
+    },
+    {
+      "rank": 10,
+      "candidate_id": "page:clothing-design-apps",
+      "title": "Apps To Design Clothing",
+      "slug": "apps-to-design-clothing",
+      "url": "/apps-to-design-clothing/",
+      "page_type": "listicle",
+      "cluster": "Virtual Try-On Tech",
+      "primary_keyword": "apps to design clothing",
+      "secondary_keywords": [
+        "best app for clothing design",
+        "best ai app for t shirt design",
+        "ai clothing design app",
+        "clothes design app with virtual try-on",
+        "virtual designing clothes apps",
+        "virtual dress designer software",
+        "virtual dress designer website",
+        "virtual dress designer online",
+        "virtual clothing design free",
+        "virtual dress design online free",
+        "virtual dress designer free",
+        "design your own clothes virtually",
+        "design dressing room online",
+        "what apps do designers use"
+      ],
+      "search_intent": "commercial",
+      "priority": "medium",
+      "score": 0.7225,
+      "score_breakdown": {
+        "audit_score": 0.5,
+        "long_tail_score": 0.95,
+        "low_competition_score": 0.75,
+        "content_gap_score": 0.5,
+        "intent_clarity_score": 0.95,
+        "cluster_diversity_score": 1.0,
+        "total_score": 0.7225,
+        "reasons": [
+          "Resolved split group",
+          "Strong long-tail primary query (4 words)",
+          "Addresses 5 target question queries",
+          "Commercial listicle intent",
+          "Definitive commercial intent",
+          "Initial anchor representative for cluster 'Virtual Try-On Tech'"
+        ]
+      },
+      "selection_rationale": "Resolved split group; Strong long-tail primary query (4 words); Addresses 5 target question queries",
+      "internal_link_targets": [
+        "/virtual-try-on-tech/",
+        "/what-is-virtual-try-on/",
+        "/best-virtual-try-on-clothing-apps/",
+        "/how-to-design-clothes-online/",
+        "/app-to-plan-outfits/",
+        "/best-online-shopping-apps-for-clothes/",
+        "/where-to-buy-clothes-online/"
+      ],
+      "target_questions": [
+        "how to make clothes online",
+        "how to design clothes online",
+        "how to create clothes online",
+        "how to design clothes online for free",
+        "what apps do designers use"
+      ]
+    }
+  ],
+  "excluded_candidates": []
+}
