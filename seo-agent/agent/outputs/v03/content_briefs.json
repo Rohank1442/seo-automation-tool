@@ -1,7 +1,7 @@
 {
   "version": "0.3",
   "phase": "content_brief_generation",
-  "generated_at": "2026-08-27T14:07:47.548184+00:00",
+  "generated_at": "2026-08-27T14:12:25.122967+00:00",
   "summary": {
     "total_briefs": 10,
     "total_target_words": 13500,
@@ -9,9 +9,9 @@
     "average_sections_per_brief": 4.0,
     "average_internal_links_per_brief": 7.4,
     "schema_types_breakdown": {
-      "HowTo": 4,
       "CollectionPage": 1,
-      "Article": 5
+      "Article": 5,
+      "HowTo": 4
     }
   },
   "briefs": [
@@ -143,7 +143,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.546620+00:00"
+      "generated_at": "2026-08-27T14:12:25.121379+00:00"
     },
     {
       "page_id": "page:how-to-get-clothes-to-sell-online",
@@ -273,7 +273,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.546620+00:00"
+      "generated_at": "2026-08-27T14:12:25.121379+00:00"
     },
     {
       "page_id": "page:what-is-virtual-try-on",
@@ -427,7 +427,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.546620+00:00"
+      "generated_at": "2026-08-27T14:12:25.121904+00:00"
     },
     {
       "page_id": "page:how-to-design-clothes-online",
@@ -592,7 +592,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.547141+00:00"
+      "generated_at": "2026-08-27T14:12:25.121904+00:00"
     },
     {
       "page_id": "page:best-online-clothes-shopping-apps",
@@ -762,7 +762,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.547141+00:00"
+      "generated_at": "2026-08-27T14:12:25.121904+00:00"
     },
     {
       "page_id": "cluster:virtual-try-on-tech",
@@ -914,7 +914,7 @@
           "placement_context": "The cluster page acts as a topical hub and should provide navigation to its supporting content pages."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.547141+00:00"
+      "generated_at": "2026-08-27T14:12:25.122439+00:00"
     },
     {
       "page_id": "page:outfit-planner-apps",
@@ -1067,7 +1067,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.547665+00:00"
+      "generated_at": "2026-08-27T14:12:25.122439+00:00"
     },
     {
       "page_id": "page:where-to-buy-clothes-online",
@@ -1231,7 +1231,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.547665+00:00"
+      "generated_at": "2026-08-27T14:12:25.122439+00:00"
     },
     {
       "page_id": "page:best-virtual-try-on-apps",
@@ -1395,7 +1395,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.547665+00:00"
+      "generated_at": "2026-08-27T14:12:25.122439+00:00"
     },
     {
       "page_id": "page:clothing-design-apps",
@@ -1559,7 +1559,7 @@
           "placement_context": "The pages have overlapping topical or search-intent signals and can provide useful contextual navigation for users."
         }
       ],
-      "generated_at": "2026-08-27T14:07:47.548184+00:00"
+      "generated_at": "2026-08-27T14:12:25.122967+00:00"
     }
   ]
 }

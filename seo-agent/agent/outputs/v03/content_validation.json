@@ -1,0 +1,834 @@
+{
+  "version": "0.3",
+  "phase": "content_validation",
+  "validated_at": "2026-08-27T14:12:49.727804+00:00",
+  "summary": {
+    "total_pages_validated": 10,
+    "passed_pages": 10,
+    "warning_pages": 0,
+    "failed_pages": 0,
+    "overall_health_score": 100.0,
+    "total_checks_run": 80,
+    "total_checks_passed": 80,
+    "total_checks_warned": 0,
+    "total_checks_failed": 0,
+    "duplicate_titles_found": 0,
+    "duplicate_descriptions_found": 0,
+    "duplicate_canonicals_found": 0,
+    "keyword_cannibalization_found": 0,
+    "orphan_pages_found": 3
+  },
+  "site_wide_checks": {
+    "duplicate_titles": [],
+    "duplicate_descriptions": [],
+    "duplicate_canonicals": [],
+    "keyword_cannibalization": [],
+    "orphan_pages": [
+      "/how-to-get-free-clothes-online/",
+      "/how-to-get-clothes-to-sell-online/",
+      "/app-to-plan-outfits/"
+    ]
+  },
+  "page_validations": [
+    {
+      "page_id": "page:how-to-get-free-clothes-online",
+      "slug": "how-to-get-free-clothes-online",
+      "url": "/how-to-get-free-clothes-online/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 52,
+          "description_length": 129,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "How To Get Free Clothes Online: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "how to get free clothes online",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 0,
+          "secondary_keywords_found": 0,
+          "coverage_percentage": 100.0,
+          "keyword_density_percentage": 1.44,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "informational",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "HowTo",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/how-to-get-free-clothes-online/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 418,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "page:how-to-get-clothes-to-sell-online",
+      "slug": "how-to-get-clothes-to-sell-online",
+      "url": "/how-to-get-clothes-to-sell-online/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 55,
+          "description_length": 132,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "How To Get Clothes To Sell Online: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "how to get clothes to sell online",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 0,
+          "secondary_keywords_found": 0,
+          "coverage_percentage": 100.0,
+          "keyword_density_percentage": 1.42,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "informational",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "HowTo",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/how-to-get-clothes-to-sell-online/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 424,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "page:what-is-virtual-try-on",
+      "slug": "what-is-virtual-try-on",
+      "url": "/what-is-virtual-try-on/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 44,
+          "description_length": 121,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "What Is Virtual Try On: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "what is virtual try on",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 4,
+          "secondary_keywords_found": 1,
+          "coverage_percentage": 25.0,
+          "keyword_density_percentage": 1.46,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "informational",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "HowTo",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/what-is-virtual-try-on/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 412,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "page:how-to-design-clothes-online",
+      "slug": "how-to-design-clothes-online",
+      "url": "/how-to-design-clothes-online/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 50,
+          "description_length": 127,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "How To Design Clothes Online: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "how to design clothes online",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 4,
+          "secondary_keywords_found": 1,
+          "coverage_percentage": 25.0,
+          "keyword_density_percentage": 1.45,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "informational",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "Article",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/how-to-design-clothes-online/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 413,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "page:best-online-clothes-shopping-apps",
+      "slug": "best-online-shopping-apps-for-clothes",
+      "url": "/best-online-shopping-apps-for-clothes/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 59,
+          "description_length": 136,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "Best Online Shopping Apps For Clothes: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "best online shopping apps for clothes",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 8,
+          "secondary_keywords_found": 1,
+          "coverage_percentage": 12.5,
+          "keyword_density_percentage": 1.44,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "commercial",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "Article",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/best-online-shopping-apps-for-clothes/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 418,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "cluster:virtual-try-on-tech",
+      "slug": "virtual-try-on-tech",
+      "url": "/virtual-try-on-tech/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 41,
+          "description_length": 118,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "Virtual Try-On Tech: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "",
+          "primary_keyword_in_h1": false,
+          "primary_keyword_in_body": false,
+          "primary_keyword_occurrences": 0,
+          "secondary_keywords_total": 0,
+          "secondary_keywords_found": 0,
+          "coverage_percentage": 100.0,
+          "keyword_density_percentage": 0.0,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "mixed",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "CollectionPage",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/virtual-try-on-tech/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 404,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "page:outfit-planner-apps",
+      "slug": "app-to-plan-outfits",
+      "url": "/app-to-plan-outfits/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 41,
+          "description_length": 118,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "App To Plan Outfits: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "app to plan outfits",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 6,
+          "secondary_keywords_found": 1,
+          "coverage_percentage": 16.7,
+          "keyword_density_percentage": 1.47,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "commercial",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "Article",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/app-to-plan-outfits/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 407,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "page:where-to-buy-clothes-online",
+      "slug": "where-to-buy-clothes-online",
+      "url": "/where-to-buy-clothes-online/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 49,
+          "description_length": 126,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "Where To Buy Clothes Online: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "where to buy clothes online",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 3,
+          "secondary_keywords_found": 1,
+          "coverage_percentage": 33.3,
+          "keyword_density_percentage": 1.45,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "transactional",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "HowTo",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/where-to-buy-clothes-online/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 414,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "page:best-virtual-try-on-apps",
+      "slug": "best-virtual-try-on-clothing-apps",
+      "url": "/best-virtual-try-on-clothing-apps/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 55,
+          "description_length": 132,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "Best Virtual Try On Clothing Apps: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "best virtual try on clothing apps",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 17,
+          "secondary_keywords_found": 1,
+          "coverage_percentage": 5.9,
+          "keyword_density_percentage": 1.43,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "commercial",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "Article",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/best-virtual-try-on-clothing-apps/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 419,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    },
+    {
+      "page_id": "page:clothing-design-apps",
+      "slug": "apps-to-design-clothing",
+      "url": "/apps-to-design-clothing/",
+      "overall_status": "passed",
+      "health_score": 100,
+      "checks": {
+        "metadata": {
+          "status": "passed",
+          "title_length": 45,
+          "description_length": 122,
+          "title_valid": true,
+          "description_valid": true,
+          "primary_keyword_in_title": true,
+          "primary_keyword_in_description": true,
+          "robots_valid": true,
+          "issues": []
+        },
+        "heading_hierarchy": {
+          "status": "passed",
+          "h1_count": 1,
+          "h1_text": "Apps To Design Clothing: Everything You Need to Know",
+          "h2_count": 4,
+          "h3_count": 0,
+          "skipped_levels": false,
+          "issues": []
+        },
+        "keyword_coverage": {
+          "status": "passed",
+          "primary_keyword": "apps to design clothing",
+          "primary_keyword_in_h1": true,
+          "primary_keyword_in_body": true,
+          "primary_keyword_occurrences": 6,
+          "secondary_keywords_total": 14,
+          "secondary_keywords_found": 1,
+          "coverage_percentage": 7.1,
+          "keyword_density_percentage": 1.47,
+          "keyword_stuffing_detected": false,
+          "issues": []
+        },
+        "search_intent": {
+          "status": "passed",
+          "classified_intent": "commercial",
+          "intent_satisfied": true,
+          "issues": []
+        },
+        "required_questions": {
+          "status": "passed",
+          "total_required": 4,
+          "questions_answered": 4,
+          "faq_items_count": 4,
+          "coverage_percentage": 100.0,
+          "issues": []
+        },
+        "internal_links": {
+          "status": "passed",
+          "links_embedded_count": 4,
+          "valid_links_count": 4,
+          "invalid_links_count": 0,
+          "broken_urls": [],
+          "issues": []
+        },
+        "schema_and_canonical": {
+          "status": "passed",
+          "schema_type": "Article",
+          "schema_valid": true,
+          "canonical_url": "https://example.com/apps-to-design-clothing/",
+          "canonical_valid": true,
+          "issues": []
+        },
+        "content_quality": {
+          "status": "passed",
+          "word_count": 409,
+          "min_word_count_threshold": 300,
+          "has_lists_or_bullets": true,
+          "frontmatter_valid": true,
+          "issues": []
+        }
+      }
+    }
+  ]
+}
