@@ -1,10 +1,12 @@
 """
-v0.3 — Content Generation Pipeline Skeleton.
+v0.3 — Content Generation Pipeline & Unified Page Candidate Builder.
 
 This phase consumes the outputs of v0.1 (SEO & Competitor Research) and v0.2
-(Site Architecture, Keyword Groups, URL Architecture, Internal Linking, and Technical SEO)
-to produce comprehensive, publication-ready SEO content, technical metadata, FAQ blocks,
-and internal link placements.
+(Site Architecture, Keyword Groups, Group Audit, URL Architecture, Internal Linking,
+and Technical SEO) to:
+1. Build and validate normalized Page Candidates (saved to outputs/v03/page_candidates.json)
+2. Generate comprehensive, publication-ready SEO content, technical metadata, FAQ blocks,
+   and internal link placements for approved candidates.
 
 Inputs (Read-only):
     - outputs/research_report.md
@@ -16,6 +18,7 @@ Inputs (Read-only):
     - outputs/v02/technical_seo.json
 
 Outputs:
+    - outputs/v03/page_candidates.json
     - outputs/v03/content_manifest.json
     - outputs/v03/content_generation_report.md
     - outputs/v03/pages/{slug}.md
@@ -106,10 +109,11 @@ OUTPUTS_DIR = BASE_DIR / "outputs"
 V02_OUTPUTS_DIR = OUTPUTS_DIR / "v02"
 V03_OUTPUTS_DIR = OUTPUTS_DIR / "v03"
 V03_PAGES_DIR = V03_OUTPUTS_DIR / "pages"
+PAGE_CANDIDATES_PATH = V03_OUTPUTS_DIR / "page_candidates.json"
 
 
 # ============================================================
-# DATA STRUCTURES & MODELS
+# DATA STRUCTURES & MODELS: NORMALIZED PAGE CANDIDATES
 # ============================================================
 
 @dataclass
@@ -129,28 +133,218 @@ class LoadedArtifacts:
 
 
 @dataclass
-class PageContext:
-    """Consolidated context and specifications for generating an individual page."""
+class KeywordDetail:
+    """Detailed keyword metadata with search volume and intent."""
 
-    page_id: str
+    keyword: str
+    intent: str = "informational"
+    is_question: bool = False
+    volume: Optional[int] = None
+    competition: Optional[float] = None
+    competition_level: Optional[str] = None
+    cpc: Optional[float] = None
+
+
+@dataclass
+class KeywordsContainer:
+    """Normalized keyword package for an individual page candidate."""
+
+    primary_keyword: Optional[str]
+    secondary_keywords: List[str] = field(default_factory=list)
+    all_keyword_details: List[Dict[str, Any]] = field(default_factory=list)
+    question_keywords: List[str] = field(default_factory=list)
+
+
+@dataclass
+class GroupAuditSummary:
+    """Audit findings and recommendations for the page's keyword group."""
+
+    group_id: Optional[str]
+    status: str = "approved"
+    confidence: float = 1.0
+    intent_consistent: bool = True
+    topic_coherent: bool = True
+    potential_outliers: List[str] = field(default_factory=list)
+    issues: List[str] = field(default_factory=list)
+    recommendation: str = "Approved for content generation."
+
+
+@dataclass
+class InternalLinkSpec:
+    """Specification for an inbound or outbound internal link."""
+
+    source_page_id: str
+    source_url: str
+    target_page_id: str
+    target_url: str
+    anchor_text: str
+    relationship: str
+    reason: str
+    priority: str = "medium"
+
+
+@dataclass
+class InternalLinkingContainer:
+    """Aggregated inbound and outbound internal links for a candidate page."""
+
+    outbound_links: List[Dict[str, Any]] = field(default_factory=list)
+    inbound_links: List[Dict[str, Any]] = field(default_factory=list)
+    outbound_count: int = 0
+    inbound_count: int = 0
+
+
+@dataclass
+class TechnicalSeoRules:
+    """On-page technical SEO directives and constraints."""
+
+    robots: str = "index, follow"
+    canonical_url: str = ""
+    schema_type: str = "Article"
+    max_title_length: int = 60
+    max_meta_description_length: int = 160
+    protocol: str = "https"
+    canonical_domain: str = "https://example.com"
+
+
+@dataclass
+class ContentStrategySpec:
+    """Content creation guidance derived from audience research and content gaps."""
+
+    target_audience: str
+    site_purpose: str
+    content_gaps: List[Dict[str, Any]] = field(default_factory=list)
+    relevant_faqs: List[str] = field(default_factory=list)
+    recommended_word_count: int = 1200
+    suggested_sections: List[str] = field(default_factory=list)
+
+
+@dataclass
+class NormalizedPageCandidate:
+    """
+    Unified, fully-normalized candidate model for an SEO page.
+
+    Combines:
+    - Page Architecture (hierarchy, type, cluster, parent)
+    - URL Architecture (slug, path, canonical)
+    - Keyword Groups (primary, secondary, intent, question queries)
+    - Group Audit (evaluation, confidence, validation)
+    - Internal Linking (inbound & outbound link topology)
+    - Technical SEO (rules, schema, indexing)
+    - Content Strategy (audience, gaps, suggested structure)
+    """
+
+    candidate_id: str
     title: str
     slug: str
     url: str
+    canonical_url: str
     page_type: str
     cluster: str
     parent_page_id: Optional[str]
-    primary_keyword: Optional[str]
-    secondary_keywords: List[str]
     search_intent: str
     priority: str
     indexable: bool
-    target_audience: str
-    site_purpose: str
-    outbound_internal_links: List[Dict[str, Any]] = field(default_factory=list)
-    inbound_internal_links: List[Dict[str, Any]] = field(default_factory=list)
-    content_gaps: List[Dict[str, Any]] = field(default_factory=list)
-    research_questions: List[str] = field(default_factory=list)
-    technical_guidelines: Dict[str, Any] = field(default_factory=dict)
+    content_status: str
+    readiness_status: str
+    keywords: KeywordsContainer
+    keyword_audit: GroupAuditSummary
+    internal_linking: InternalLinkingContainer
+    technical_seo: TechnicalSeoRules
+    content_strategy: ContentStrategySpec
+
+
+@dataclass
+class PageCandidatesManifest:
+    """Top-level container for all normalized page candidates."""
+
+    version: str = "0.3"
+    phase: str = "page_candidates_preparation"
+    generated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    site_profile: Dict[str, Any] = field(default_factory=dict)
+    summary: Dict[str, Any] = field(default_factory=dict)
+    global_technical_seo: Dict[str, Any] = field(default_factory=dict)
+    candidates: List[NormalizedPageCandidate] = field(default_factory=list)
+
+
+@dataclass
+class PageContext:
+    """Context wrapper for executing single-page generation."""
+
+    candidate: NormalizedPageCandidate
+
+    @property
+    def page_id(self) -> str:
+        return self.candidate.candidate_id
+
+    @property
+    def title(self) -> str:
+        return self.candidate.title
+
+    @property
+    def slug(self) -> str:
+        return self.candidate.slug
+
+    @property
+    def url(self) -> str:
+        return self.candidate.url
+
+    @property
+    def page_type(self) -> str:
+        return self.candidate.page_type
+
+    @property
+    def cluster(self) -> str:
+        return self.candidate.cluster
+
+    @property
+    def parent_page_id(self) -> Optional[str]:
+        return self.candidate.parent_page_id
+
+    @property
+    def primary_keyword(self) -> Optional[str]:
+        return self.candidate.keywords.primary_keyword
+
+    @property
+    def secondary_keywords(self) -> List[str]:
+        return self.candidate.keywords.secondary_keywords
+
+    @property
+    def search_intent(self) -> str:
+        return self.candidate.search_intent
+
+    @property
+    def priority(self) -> str:
+        return self.candidate.priority
+
+    @property
+    def indexable(self) -> bool:
+        return self.candidate.indexable
+
+    @property
+    def target_audience(self) -> str:
+        return self.candidate.content_strategy.target_audience
+
+    @property
+    def site_purpose(self) -> str:
+        return self.candidate.content_strategy.site_purpose
+
+    @property
+    def outbound_internal_links(self) -> List[Dict[str, Any]]:
+        return self.candidate.internal_linking.outbound_links
+
+    @property
+    def inbound_internal_links(self) -> List[Dict[str, Any]]:
+        return self.candidate.internal_linking.inbound_links
+
+    @property
+    def content_gaps(self) -> List[Dict[str, Any]]:
+        return self.candidate.content_strategy.content_gaps
+
+    @property
+    def research_questions(self) -> List[str]:
+        return self.candidate.content_strategy.relevant_faqs
 
 
 @dataclass
@@ -309,7 +503,7 @@ def load_all_pipeline_inputs(base_outputs_dir: Optional[Path] = None) -> LoadedA
 
 
 # ============================================================
-# STEP 2: CONTEXT AGGREGATION & PAGE SPEC COMPILER
+# STEP 2: UNIFIED PAGE CANDIDATE BUILDER
 # ============================================================
 
 def extract_research_questions(research_report_md: str) -> List[str]:
@@ -317,7 +511,6 @@ def extract_research_questions(research_report_md: str) -> List[str]:
     questions: List[str] = []
     for line in research_report_md.splitlines():
         line = line.strip()
-        # Look for table rows with is_question == Yes or lines ending with '?'
         if line.startswith("|") and "Yes" in line:
             parts = [p.strip() for p in line.split("|")]
             if len(parts) > 1 and parts[1]:
@@ -332,29 +525,47 @@ def extract_research_questions(research_report_md: str) -> List[str]:
 def extract_content_gaps(site_architecture: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Extract content gaps if present in site architecture or profile."""
     gaps: List[Dict[str, Any]] = []
-    # Check if page_opportunities structure is embedded
     for cluster in site_architecture.get("clusters", []):
         for gap in cluster.get("content_gaps", []):
             gaps.append(gap)
     return gaps
 
 
-def compile_page_contexts(artifacts: LoadedArtifacts) -> List[PageContext]:
+def determine_recommended_schema_type(page_type: str) -> str:
+    """Select standard Schema.org type based on page format."""
+    mapping = {
+        "cluster": "CollectionPage",
+        "guide": "HowTo",
+        "informational": "Article",
+        "listicle": "Article",
+        "comparison": "Article",
+        "faq_hub": "FAQPage",
+    }
+    return mapping.get(page_type.lower(), "Article")
+
+
+def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesManifest:
     """
-    Compile unified PageContext objects for every planned page by merging:
-    - Site & URL architecture specifications
-    - Semantic keyword groups & secondary keywords
-    - Outbound and inbound internal links
-    - Technical SEO guidelines
-    - Extracted research gaps and user questions
+    Build a normalized, unified page candidate model by combining:
+    - Page architecture (hierarchy, types, clusters)
+    - Keyword groups & keyword metrics
+    - Keyword group audits & recommendations
+    - URL architecture & canonical URLs
+    - Internal linking graph (inbound and outbound)
+    - Technical SEO directives
+    - Research gaps, questions, and audience context
     """
-    contexts: List[PageContext] = []
+    logger.info("Building unified page candidates from all loaded artifacts...")
 
     site_profile = artifacts.site_architecture.get("site_profile", {})
-    target_audience = site_profile.get("target_audience", "General fashion audience")
+    target_audience = site_profile.get("target_audience", "General audience")
     site_purpose = site_profile.get("primary_purpose", "High quality SEO resource")
 
-    # Build lookup map of internal links by source and target URL
+    tech_rules = artifacts.technical_seo.get("global_rules", {})
+    canonical_domain = tech_rules.get("canonical_domain", "https://example.com").rstrip("/")
+    default_indexing = tech_rules.get("indexing", {}).get("default", "index, follow")
+
+    # 1. Build lookup map of internal links
     links = artifacts.internal_linking.get("links", [])
     outbound_by_url: Dict[str, List[Dict[str, Any]]] = {}
     inbound_by_url: Dict[str, List[Dict[str, Any]]] = {}
@@ -367,24 +578,45 @@ def compile_page_contexts(artifacts: LoadedArtifacts) -> List[PageContext]:
         if t_url:
             inbound_by_url.setdefault(t_url, []).append(link)
 
-    # Build lookup map of keyword groups by group_id or primary_keyword
-    kw_group_map: Dict[str, Dict[str, Any]] = {}
+    # 2. Build lookup maps for keyword groups
+    kw_group_by_id: Dict[str, Dict[str, Any]] = {}
+    kw_group_by_primary_kw: Dict[str, Dict[str, Any]] = {}
+
     for cluster_item in artifacts.keyword_groups.get("clusters", []):
         for grp in cluster_item.get("groups", []):
-            if grp.get("group_id"):
-                kw_group_map[grp["group_id"]] = grp
-            if grp.get("primary_keyword"):
-                kw_group_map[grp["primary_keyword"].lower()] = grp
+            gid = grp.get("group_id")
+            p_kw = grp.get("primary_keyword")
+            if gid:
+                kw_group_by_id[gid] = grp
+            if p_kw:
+                kw_group_by_primary_kw[p_kw.lower().strip()] = grp
 
-    # Extract global research questions & content gaps
+    # 3. Build lookup map for keyword group audits
+    audit_by_group_id: Dict[str, Dict[str, Any]] = {}
+    for cluster_item in artifacts.group_audit.get("clusters", []):
+        for aud in cluster_item.get("audits", []):
+            gid = aud.get("group_id")
+            if gid:
+                audit_by_group_id[gid] = aud
+
+    # 4. Build lookup map for URL architecture
+    url_arch_by_id: Dict[str, Dict[str, Any]] = {}
+    for u in artifacts.url_architecture.get("urls", []):
+        pid = u.get("page_id")
+        if pid:
+            url_arch_by_id[pid] = u
+
+    # 5. Extract global questions and content gaps
     research_questions = extract_research_questions(artifacts.research_report_md)
     content_gaps = extract_content_gaps(artifacts.site_architecture)
-    technical_rules = artifacts.technical_seo.get("global_rules", {})
 
-    # Iterate through each planned page in site_architecture
-    for cluster_wrapper in artifacts.site_architecture.get("clusters", []):
-        cluster_name = cluster_wrapper.get("cluster", {}).get("title", "Main Cluster")
-        pages = cluster_wrapper.get("pages", [])
+    # 6. Iterate and normalize all pages
+    candidates: List[NormalizedPageCandidate] = []
+
+    for cluster_item in artifacts.site_architecture.get("clusters", []):
+        cluster_info = cluster_item.get("cluster", {})
+        cluster_name = cluster_info.get("title", cluster_info.get("name", "Topical Cluster"))
+        pages = cluster_item.get("pages", [])
 
         for page in pages:
             page_id = page.get("id", "")
@@ -398,46 +630,219 @@ def compile_page_contexts(artifacts: LoadedArtifacts) -> List[PageContext]:
             intent = page.get("intent", "informational")
             priority = page.get("priority", "medium")
             indexable = page.get("indexable", True)
+            content_status = page.get("content_status", "candidate")
 
-            # Enrich secondary keywords if missing from keyword_groups.json
-            if not secondary_kws and primary_kw:
-                matched_grp = kw_group_map.get(primary_kw.lower())
-                if matched_grp:
-                    secondary_kws = matched_grp.get("secondary_keywords", [])
+            # Canonical URL computation
+            canonical_url = f"{canonical_domain}{url}"
 
-            # Filter relevant questions for this page
-            page_questions = [
+            # Match keyword group
+            matched_group = None
+            raw_group_id = page_id.replace("page:", "").replace("cluster:", "")
+            if raw_group_id in kw_group_by_id:
+                matched_group = kw_group_by_id[raw_group_id]
+            elif primary_kw and primary_kw.lower().strip() in kw_group_by_primary_kw:
+                matched_group = kw_group_by_primary_kw[primary_kw.lower().strip()]
+
+            # Extract detailed keywords & question queries
+            all_kw_details: List[Dict[str, Any]] = []
+            question_kws: List[str] = []
+
+            if matched_group:
+                if not secondary_kws:
+                    secondary_kws = matched_group.get("secondary_keywords", [])
+                for kw_item in matched_group.get("keywords", []):
+                    all_kw_details.append(kw_item)
+                    if kw_item.get("is_question"):
+                        question_kws.append(kw_item.get("keyword"))
+
+            if not question_kws and primary_kw and any(w in primary_kw.lower() for w in ["what", "how", "why", "which", "where", "can"]):
+                question_kws.append(primary_kw)
+
+            # Match group audit
+            audit_obj = None
+            if raw_group_id in audit_by_group_id:
+                audit_obj = audit_by_group_id[raw_group_id]
+            elif matched_group and matched_group.get("group_id") in audit_by_group_id:
+                audit_obj = audit_by_group_id[matched_group["group_id"]]
+
+            if audit_obj:
+                audit_summary = GroupAuditSummary(
+                    group_id=audit_obj.get("group_id"),
+                    status=audit_obj.get("status", "approved"),
+                    confidence=audit_obj.get("confidence", 1.0),
+                    intent_consistent=audit_obj.get("intent_consistent", True),
+                    topic_coherent=audit_obj.get("topic_coherent", True),
+                    potential_outliers=audit_obj.get("potential_outliers", []),
+                    issues=audit_obj.get("issues", []),
+                    recommendation=audit_obj.get("recommendation", "Proceed with generation."),
+                )
+            elif page_type == "cluster":
+                audit_summary = GroupAuditSummary(
+                    group_id=raw_group_id,
+                    status="approved",
+                    confidence=1.0,
+                    intent_consistent=True,
+                    topic_coherent=True,
+                    potential_outliers=[],
+                    issues=[],
+                    recommendation="Top-level cluster hub page.",
+                )
+            else:
+                audit_summary = GroupAuditSummary(
+                    group_id=raw_group_id,
+                    status="approved",
+                    confidence=0.9,
+                    intent_consistent=True,
+                    topic_coherent=True,
+                    issues=[],
+                    recommendation="Approved candidate.",
+                )
+
+            # Match internal links
+            outbound_links = outbound_by_url.get(url, [])
+            inbound_links = inbound_by_url.get(url, [])
+
+            linking_container = InternalLinkingContainer(
+                outbound_links=outbound_links,
+                inbound_links=inbound_links,
+                outbound_count=len(outbound_links),
+                inbound_count=len(inbound_links),
+            )
+
+            # Match technical SEO
+            schema_type = determine_recommended_schema_type(page_type)
+            tech_seo = TechnicalSeoRules(
+                robots=default_indexing if indexable else "noindex, follow",
+                canonical_url=canonical_url,
+                schema_type=schema_type,
+                max_title_length=60,
+                max_meta_description_length=160,
+                protocol=tech_rules.get("protocol", "https"),
+                canonical_domain=canonical_domain,
+            )
+
+            # Relevant FAQs & gaps for content strategy
+            page_faqs = [
                 q for q in research_questions
                 if any(w in q.lower() for w in (primary_kw or slug).replace("-", " ").lower().split() if len(w) > 3)
             ]
-            if not page_questions:
-                page_questions = research_questions[:4]
+            if not page_faqs:
+                page_faqs = research_questions[:4]
 
-            ctx = PageContext(
-                page_id=page_id,
+            # Suggested sections
+            suggested_sections = [
+                f"Introduction to {title}",
+                f"Core Features & Concepts",
+                f"Comparison & Best Practices",
+                f"Frequently Asked Questions",
+            ]
+
+            content_strat = ContentStrategySpec(
+                target_audience=target_audience,
+                site_purpose=site_purpose,
+                content_gaps=content_gaps,
+                relevant_faqs=page_faqs,
+                recommended_word_count=1500 if page_type in ["guide", "cluster"] else 1200,
+                suggested_sections=suggested_sections,
+            )
+
+            # Readiness status
+            readiness = "ready_for_generation"
+            if audit_summary.status in ["review", "split"] and audit_summary.confidence < 0.7:
+                readiness = "needs_review"
+
+            candidate = NormalizedPageCandidate(
+                candidate_id=page_id,
                 title=title,
                 slug=slug,
                 url=url,
+                canonical_url=canonical_url,
                 page_type=page_type,
                 cluster=cluster_name,
                 parent_page_id=parent_id,
-                primary_keyword=primary_kw,
-                secondary_keywords=secondary_kws,
                 search_intent=intent,
                 priority=priority,
                 indexable=indexable,
-                target_audience=target_audience,
-                site_purpose=site_purpose,
-                outbound_internal_links=outbound_by_url.get(url, []),
-                inbound_internal_links=inbound_by_url.get(url, []),
-                content_gaps=content_gaps,
-                research_questions=page_questions,
-                technical_guidelines=technical_rules,
+                content_status=content_status,
+                readiness_status=readiness,
+                keywords=KeywordsContainer(
+                    primary_keyword=primary_kw,
+                    secondary_keywords=secondary_kws,
+                    all_keyword_details=all_kw_details,
+                    question_keywords=question_kws,
+                ),
+                keyword_audit=audit_summary,
+                internal_linking=linking_container,
+                technical_seo=tech_seo,
+                content_strategy=content_strat,
             )
-            contexts.append(ctx)
+            candidates.append(candidate)
 
-    logger.info(f"Compiled {len(contexts)} page generation context specifications.")
-    return contexts
+    # Build summary
+    summary = {
+        "total_candidates": len(candidates),
+        "cluster_pages": sum(1 for c in candidates if c.page_type == "cluster"),
+        "content_pages": sum(1 for c in candidates if c.page_type != "cluster"),
+        "high_priority_pages": sum(1 for c in candidates if c.priority == "high"),
+        "medium_priority_pages": sum(1 for c in candidates if c.priority == "medium"),
+        "ready_for_generation": sum(1 for c in candidates if c.readiness_status == "ready_for_generation"),
+        "needs_review": sum(1 for c in candidates if c.readiness_status == "needs_review"),
+        "total_internal_links": len(links),
+    }
+
+    manifest = PageCandidatesManifest(
+        version="0.3",
+        phase="page_candidates_preparation",
+        site_profile=site_profile,
+        summary=summary,
+        global_technical_seo=tech_rules,
+        candidates=candidates,
+    )
+
+    logger.info(
+        f"Unified Page Candidates built successfully: {len(candidates)} candidates ready."
+    )
+    return manifest
+
+
+def save_page_candidates(
+    manifest: PageCandidatesManifest,
+    output_path: Optional[Path] = None,
+) -> Path:
+    """Save normalized page candidates manifest to JSON."""
+    target_path = output_path or PAGE_CANDIDATES_PATH
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    manifest_dict = asdict(manifest)
+
+    with open(target_path, "w", encoding="utf-8") as f:
+        json.dump(manifest_dict, f, indent=2, ensure_ascii=False)
+
+    logger.info(f"Saved normalized page candidates to: {target_path}")
+    return target_path
+
+
+def build_and_save_page_candidates(
+    base_outputs_dir: Optional[Path] = None,
+    output_path: Optional[Path] = None,
+) -> Path:
+    """
+    Convenience orchestrator to load artifacts, build normalized page candidates,
+    and save outputs/v03/page_candidates.json without generating content.
+    """
+    configure_logging()
+    artifacts = load_all_pipeline_inputs(base_outputs_dir)
+    manifest = build_unified_page_candidates(artifacts)
+    saved_path = save_page_candidates(manifest, output_path)
+    return saved_path
+
+
+def compile_page_contexts(artifacts: LoadedArtifacts) -> List[PageContext]:
+    """Compile PageContext wrappers for generation from unified candidates."""
+    manifest = build_unified_page_candidates(artifacts)
+    # Save/update candidate manifest
+    save_page_candidates(manifest)
+    return [PageContext(candidate=c) for c in manifest.candidates]
 
 
 # ============================================================
@@ -452,7 +857,7 @@ def generate_page_brief(context: PageContext, dry_run: bool = False) -> ContentO
             page_title=context.title,
             h1_heading=f"{context.title}: The Complete Guide",
             target_audience=context.target_audience,
-            estimated_total_word_count=1200,
+            estimated_total_word_count=context.candidate.content_strategy.recommended_word_count,
             content_format=context.page_type,
             sections=[
                 {
@@ -629,7 +1034,7 @@ def generate_page_metadata(context: PageContext, dry_run: bool = False) -> PageM
             secondary_keywords=context.secondary_keywords[:4],
             canonical_url=context.url,
             robots="index, follow" if context.indexable else "noindex, follow",
-            schema_type="Article",
+            schema_type=context.candidate.technical_seo.schema_type,
             og_title=seo_title,
             og_description=meta_desc,
         )
@@ -714,7 +1119,6 @@ def compose_complete_markdown_page(
     faq: FAQSectionResponse,
 ) -> str:
     """Compose the final unified markdown document with YAML frontmatter, body, and FAQ."""
-    # Build YAML frontmatter
     sec_kws_formatted = json.dumps(metadata.secondary_keywords)
     safe_title = metadata.seo_title.replace('"', '\\"')
     safe_desc = metadata.meta_description.replace('"', '\\"')
@@ -733,7 +1137,6 @@ generated_at: "{datetime.now(timezone.utc).isoformat()}"
 ---
 
 """
-    # Append FAQ section if available and not already in article
     faq_block = ""
     if faq and faq.faq_items and "Frequently Asked Questions" not in article_md:
         faq_block = f"\n\n## {faq.section_heading}\n\n"
@@ -812,11 +1215,9 @@ def save_generated_page(result: GeneratedPageResult, pages_dir: Path) -> Tuple[P
     md_path = pages_dir / f"{safe_slug}.md"
     json_path = pages_dir / f"{safe_slug}.json"
 
-    # Save Markdown file
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(result.markdown_content)
 
-    # Save JSON file
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(asdict(result), f, indent=2, ensure_ascii=False)
 
@@ -914,6 +1315,7 @@ def run_content_generation_phase(
     target_slug: Optional[str] = None,
     max_pages: Optional[int] = None,
     output_dir: Optional[Path] = None,
+    candidates_only: bool = False,
 ) -> Dict[str, Any]:
     """
     Main entry point for v0.3 Content Generation Phase.
@@ -923,6 +1325,7 @@ def run_content_generation_phase(
         target_slug: Optional slug filter to generate a single specific page.
         max_pages: Optional limit on the number of pages to generate in this run.
         output_dir: Custom destination directory for v0.3 outputs (defaults to outputs/v03).
+        candidates_only: When True, builds and saves page_candidates.json without generating content.
 
     Returns:
         Summary dict containing counts, artifacts paths, and execution status.
@@ -930,7 +1333,7 @@ def run_content_generation_phase(
     configure_logging()
     logger.info("==========================================================")
     logger.info("STARTING V0.3 CONTENT GENERATION PIPELINE")
-    logger.info(f"Dry-run mode: {dry_run} | Target slug: {target_slug or 'ALL'}")
+    logger.info(f"Candidates only: {candidates_only} | Dry-run mode: {dry_run} | Target slug: {target_slug or 'ALL'}")
     logger.info("==========================================================")
 
     out_dir = output_dir or V03_OUTPUTS_DIR
@@ -941,8 +1344,25 @@ def run_content_generation_phase(
     # 1. Load inputs
     artifacts = load_all_pipeline_inputs()
 
-    # 2. Compile page contexts
-    page_contexts = compile_page_contexts(artifacts)
+    # 2. Build and save normalized page candidates
+    candidates_manifest = build_unified_page_candidates(artifacts)
+    candidates_file = save_page_candidates(candidates_manifest, out_dir / "page_candidates.json")
+
+    if candidates_only:
+        logger.info("\n==========================================================")
+        logger.info("PAGE CANDIDATES CREATION COMPLETE (Candidates-Only Mode)")
+        logger.info(f"  Candidates file: {candidates_file}")
+        logger.info(f"  Total candidate pages: {len(candidates_manifest.candidates)}")
+        logger.info("==========================================================")
+        return {
+            "status": "success",
+            "mode": "candidates_only",
+            "page_candidates_file": str(candidates_file),
+            "total_candidates": len(candidates_manifest.candidates),
+        }
+
+    # 3. Compile page contexts from candidates
+    page_contexts = [PageContext(candidate=c) for c in candidates_manifest.candidates]
 
     # Apply filters if requested
     if target_slug:
@@ -954,7 +1374,7 @@ def run_content_generation_phase(
         page_contexts = page_contexts[:max_pages]
         logger.info(f"Constrained generation run to top {max_pages} pages.")
 
-    # 3. Process pages
+    # 4. Process pages
     results: List[GeneratedPageResult] = []
     for idx, ctx in enumerate(page_contexts, start=1):
         logger.info(f"\n[Page {idx}/{len(page_contexts)}]")
@@ -962,14 +1382,15 @@ def run_content_generation_phase(
         save_generated_page(res, pages_dir)
         results.append(res)
 
-    # 4. Export Manifest & Summary Report
+    # 5. Export Manifest & Summary Report
     manifest_path = export_content_manifest(results, out_dir)
     report_path = generate_v03_summary_report(results, out_dir)
 
     logger.info("\n==========================================================")
     logger.info("V0.3 CONTENT GENERATION COMPLETED")
-    logger.info(f"  Manifest: {manifest_path}")
-    logger.info(f"  Report:   {report_path}")
+    logger.info(f"  Candidates: {candidates_file}")
+    logger.info(f"  Manifest:   {manifest_path}")
+    logger.info(f"  Report:     {report_path}")
     logger.info(f"  Pages Saved In: {pages_dir}")
     logger.info("==========================================================")
 
@@ -977,6 +1398,7 @@ def run_content_generation_phase(
         "status": "success",
         "total_processed": len(results),
         "completed": len([r for r in results if r.status == "completed"]),
+        "page_candidates_file": str(candidates_file),
         "manifest_path": str(manifest_path),
         "report_path": str(report_path),
         "output_directory": str(out_dir),
@@ -990,7 +1412,12 @@ def run_content_generation_phase(
 def main():
     """Command-line interface for running the v0.3 content generation pipeline."""
     parser = argparse.ArgumentParser(
-        description="v0.3 Content Generation Pipeline for SEO Automation",
+        description="v0.3 Content Generation Pipeline & Page Candidate Builder",
+    )
+    parser.add_argument(
+        "--candidates-only",
+        action="store_true",
+        help="Build and save normalized page_candidates.json without generating content",
     )
     parser.add_argument(
         "--dry-run",
@@ -1025,6 +1452,7 @@ def main():
             dry_run=args.dry_run,
             target_slug=args.slug,
             max_pages=args.max_pages,
+            candidates_only=args.candidates_only,
         )
     except Exception as e:
         logger.error(f"Pipeline execution aborted due to unhandled exception: {e}", exc_info=True)
