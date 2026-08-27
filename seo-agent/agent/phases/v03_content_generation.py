@@ -1,12 +1,13 @@
 """
-v0.3 — Content Generation Pipeline & Unified Page Candidate Builder.
+v0.3 — Content Generation Pipeline, Page Candidate Builder & First-Wave Page Selector.
 
 This phase consumes the outputs of v0.1 (SEO & Competitor Research) and v0.2
 (Site Architecture, Keyword Groups, Group Audit, URL Architecture, Internal Linking,
 and Technical SEO) to:
 1. Build and validate normalized Page Candidates (saved to outputs/v03/page_candidates.json)
-2. Generate comprehensive, publication-ready SEO content, technical metadata, FAQ blocks,
-   and internal link placements for approved candidates.
+2. Run multi-factor First-Wave Page Selection (10–20 pages, saved to outputs/v03/selected_pages.json)
+3. Generate comprehensive, publication-ready SEO content, technical metadata, FAQ blocks,
+   and internal link placements for selected pages.
 
 Inputs (Read-only):
     - outputs/research_report.md
@@ -19,6 +20,7 @@ Inputs (Read-only):
 
 Outputs:
     - outputs/v03/page_candidates.json
+    - outputs/v03/selected_pages.json
     - outputs/v03/content_manifest.json
     - outputs/v03/content_generation_report.md
     - outputs/v03/pages/{slug}.md
@@ -110,6 +112,7 @@ V02_OUTPUTS_DIR = OUTPUTS_DIR / "v02"
 V03_OUTPUTS_DIR = OUTPUTS_DIR / "v03"
 V03_PAGES_DIR = V03_OUTPUTS_DIR / "pages"
 PAGE_CANDIDATES_PATH = V03_OUTPUTS_DIR / "page_candidates.json"
+SELECTED_PAGES_PATH = V03_OUTPUTS_DIR / "selected_pages.json"
 
 
 # ============================================================
@@ -222,15 +225,6 @@ class ContentStrategySpec:
 class NormalizedPageCandidate:
     """
     Unified, fully-normalized candidate model for an SEO page.
-
-    Combines:
-    - Page Architecture (hierarchy, type, cluster, parent)
-    - URL Architecture (slug, path, canonical)
-    - Keyword Groups (primary, secondary, intent, question queries)
-    - Group Audit (evaluation, confidence, validation)
-    - Internal Linking (inbound & outbound link topology)
-    - Technical SEO (rules, schema, indexing)
-    - Content Strategy (audience, gaps, suggested structure)
     """
 
     candidate_id: str
@@ -266,6 +260,81 @@ class PageCandidatesManifest:
     summary: Dict[str, Any] = field(default_factory=dict)
     global_technical_seo: Dict[str, Any] = field(default_factory=dict)
     candidates: List[NormalizedPageCandidate] = field(default_factory=list)
+
+
+# ============================================================
+# FIRST-WAVE SELECTION DATA STRUCTURES & CONFIG
+# ============================================================
+
+@dataclass
+class FirstWaveSelectionConfig:
+    """Configurable weights and thresholds for First-Wave page selection."""
+
+    min_pages: int = 10
+    max_pages: int = 20
+    target_count: Optional[int] = None
+    include_cluster_hubs: bool = True
+    # Weights for scoring criteria (summing to 1.0)
+    audit_weight: float = 0.25
+    long_tail_weight: float = 0.20
+    low_competition_weight: float = 0.15
+    content_gap_weight: float = 0.20
+    intent_clarity_weight: float = 0.10
+    cluster_diversity_weight: float = 0.10
+    min_score_threshold: float = 0.0
+    allowed_intents: Optional[List[str]] = None
+    allowed_page_types: Optional[List[str]] = None
+
+
+@dataclass
+class PageScoringBreakdown:
+    """Detailed score breakdown across all selection dimensions."""
+
+    audit_score: float
+    long_tail_score: float
+    low_competition_score: float
+    content_gap_score: float
+    intent_clarity_score: float
+    cluster_diversity_score: float
+    total_score: float
+    reasons: List[str] = field(default_factory=list)
+
+
+@dataclass
+class SelectedPage:
+    """Specification of an approved First-Wave page selection."""
+
+    rank: int
+    candidate_id: str
+    title: str
+    slug: str
+    url: str
+    page_type: str
+    cluster: str
+    primary_keyword: Optional[str]
+    secondary_keywords: List[str]
+    search_intent: str
+    priority: str
+    score: float
+    score_breakdown: Dict[str, Any]
+    selection_rationale: str
+    internal_link_targets: List[str] = field(default_factory=list)
+    target_questions: List[str] = field(default_factory=list)
+
+
+@dataclass
+class FirstWaveSelectionManifest:
+    """Top-level output artifact for First-Wave page selection."""
+
+    version: str = "0.3"
+    phase: str = "first_wave_page_selection"
+    generated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+    config: Dict[str, Any] = field(default_factory=dict)
+    summary: Dict[str, Any] = field(default_factory=dict)
+    selected_pages: List[SelectedPage] = field(default_factory=list)
+    excluded_candidates: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -416,8 +485,6 @@ def load_text_file(path: Path) -> str:
 def load_all_pipeline_inputs(base_outputs_dir: Optional[Path] = None) -> LoadedArtifacts:
     """
     Load and validate all v0.1 and v0.2 artifacts.
-
-    Searches in standard and fallback paths to guarantee resiliency.
     """
     out_dir = base_outputs_dir or OUTPUTS_DIR
     v02_dir = out_dir / "v02"
@@ -546,14 +613,7 @@ def determine_recommended_schema_type(page_type: str) -> str:
 
 def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesManifest:
     """
-    Build a normalized, unified page candidate model by combining:
-    - Page architecture (hierarchy, types, clusters)
-    - Keyword groups & keyword metrics
-    - Keyword group audits & recommendations
-    - URL architecture & canonical URLs
-    - Internal linking graph (inbound and outbound)
-    - Technical SEO directives
-    - Research gaps, questions, and audience context
+    Build a normalized, unified page candidate model by combining all loaded artifacts.
     """
     logger.info("Building unified page candidates from all loaded artifacts...")
 
@@ -599,18 +659,11 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
             if gid:
                 audit_by_group_id[gid] = aud
 
-    # 4. Build lookup map for URL architecture
-    url_arch_by_id: Dict[str, Dict[str, Any]] = {}
-    for u in artifacts.url_architecture.get("urls", []):
-        pid = u.get("page_id")
-        if pid:
-            url_arch_by_id[pid] = u
-
-    # 5. Extract global questions and content gaps
+    # 4. Extract global questions and content gaps
     research_questions = extract_research_questions(artifacts.research_report_md)
     content_gaps = extract_content_gaps(artifacts.site_architecture)
 
-    # 6. Iterate and normalize all pages
+    # 5. Iterate and normalize all pages
     candidates: List[NormalizedPageCandidate] = []
 
     for cluster_item in artifacts.site_architecture.get("clusters", []):
@@ -632,10 +685,8 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
             indexable = page.get("indexable", True)
             content_status = page.get("content_status", "candidate")
 
-            # Canonical URL computation
             canonical_url = f"{canonical_domain}{url}"
 
-            # Match keyword group
             matched_group = None
             raw_group_id = page_id.replace("page:", "").replace("cluster:", "")
             if raw_group_id in kw_group_by_id:
@@ -643,7 +694,6 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
             elif primary_kw and primary_kw.lower().strip() in kw_group_by_primary_kw:
                 matched_group = kw_group_by_primary_kw[primary_kw.lower().strip()]
 
-            # Extract detailed keywords & question queries
             all_kw_details: List[Dict[str, Any]] = []
             question_kws: List[str] = []
 
@@ -658,7 +708,6 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
             if not question_kws and primary_kw and any(w in primary_kw.lower() for w in ["what", "how", "why", "which", "where", "can"]):
                 question_kws.append(primary_kw)
 
-            # Match group audit
             audit_obj = None
             if raw_group_id in audit_by_group_id:
                 audit_obj = audit_by_group_id[raw_group_id]
@@ -698,7 +747,6 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
                     recommendation="Approved candidate.",
                 )
 
-            # Match internal links
             outbound_links = outbound_by_url.get(url, [])
             inbound_links = inbound_by_url.get(url, [])
 
@@ -709,7 +757,6 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
                 inbound_count=len(inbound_links),
             )
 
-            # Match technical SEO
             schema_type = determine_recommended_schema_type(page_type)
             tech_seo = TechnicalSeoRules(
                 robots=default_indexing if indexable else "noindex, follow",
@@ -721,7 +768,6 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
                 canonical_domain=canonical_domain,
             )
 
-            # Relevant FAQs & gaps for content strategy
             page_faqs = [
                 q for q in research_questions
                 if any(w in q.lower() for w in (primary_kw or slug).replace("-", " ").lower().split() if len(w) > 3)
@@ -729,11 +775,10 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
             if not page_faqs:
                 page_faqs = research_questions[:4]
 
-            # Suggested sections
             suggested_sections = [
                 f"Introduction to {title}",
-                f"Core Features & Concepts",
-                f"Comparison & Best Practices",
+                f"Core Concepts and User Guide",
+                f"Best Practices & Comparison",
                 f"Frequently Asked Questions",
             ]
 
@@ -746,7 +791,6 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
                 suggested_sections=suggested_sections,
             )
 
-            # Readiness status
             readiness = "ready_for_generation"
             if audit_summary.status in ["review", "split"] and audit_summary.confidence < 0.7:
                 readiness = "needs_review"
@@ -778,7 +822,6 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
             )
             candidates.append(candidate)
 
-    # Build summary
     summary = {
         "total_candidates": len(candidates),
         "cluster_pages": sum(1 for c in candidates if c.page_type == "cluster"),
@@ -837,16 +880,385 @@ def build_and_save_page_candidates(
     return saved_path
 
 
-def compile_page_contexts(artifacts: LoadedArtifacts) -> List[PageContext]:
-    """Compile PageContext wrappers for generation from unified candidates."""
-    manifest = build_unified_page_candidates(artifacts)
-    # Save/update candidate manifest
-    save_page_candidates(manifest)
-    return [PageContext(candidate=c) for c in manifest.candidates]
+# ============================================================
+# STEP 3: FIRST-WAVE PAGE SELECTION ALGORITHM
+# ============================================================
+
+def score_page_candidate(
+    candidate: NormalizedPageCandidate,
+    config: FirstWaveSelectionConfig,
+    cluster_representation_counts: Dict[str, int],
+) -> Tuple[float, PageScoringBreakdown, str]:
+    """
+    Calculate a multi-criteria SEO score for a page candidate:
+    1. Group Audit Confidence (approved vs review/split)
+    2. Long-Tail Search Opportunity (multi-word depth & question keywords)
+    3. Low Competition / Early Rankability
+    4. Content-Gap Match & Priority
+    5. Search Intent Clarity
+    6. Cluster Diversity & Link Hierarchy Balance
+    """
+    reasons: List[str] = []
+
+    # 1. Audit Score (0.0 to 1.0)
+    audit = candidate.keyword_audit
+    if candidate.page_type == "cluster":
+        audit_score = 1.0
+        reasons.append("Cluster hub page (full audit alignment)")
+    elif audit.status == "approved":
+        audit_score = 0.85 + (audit.confidence * 0.15)
+        reasons.append(f"Approved keyword group (confidence: {audit.confidence:.2f})")
+    elif audit.status == "review":
+        audit_score = 0.60 + (audit.confidence * 0.15)
+        reasons.append("Group in review status")
+    else:  # split
+        audit_score = 0.50
+        reasons.append("Resolved split group")
+
+    # 2. Long-Tail Opportunity (0.0 to 1.0)
+    p_kw = candidate.keywords.primary_keyword or ""
+    p_kw_words = len(p_kw.split()) if p_kw else 0
+    q_count = len(candidate.keywords.question_keywords)
+
+    if p_kw_words >= 5:
+        long_tail_score = 0.95
+        reasons.append(f"Deep long-tail primary query ({p_kw_words} words)")
+    elif p_kw_words >= 4:
+        long_tail_score = 0.85
+        reasons.append(f"Strong long-tail primary query ({p_kw_words} words)")
+    elif p_kw_words == 3:
+        long_tail_score = 0.70
+        reasons.append("Medium-tail primary keyword")
+    elif candidate.page_type == "cluster":
+        long_tail_score = 0.65
+        reasons.append("Broad cluster hub keyword scope")
+    else:
+        long_tail_score = 0.50
+
+    if q_count > 0:
+        long_tail_score = min(1.0, long_tail_score + 0.10)
+        reasons.append(f"Addresses {q_count} target question queries")
+
+    # 3. Low Competition / Early Domain Rankability (0.0 to 1.0)
+    # Check if keyword details contain competition score
+    comp_scores = [
+        kw.get("competition") for kw in candidate.keywords.all_keyword_details
+        if kw.get("competition") is not None
+    ]
+    if comp_scores:
+        avg_comp = sum(comp_scores) / len(comp_scores)
+        low_competition_score = max(0.2, 1.0 - avg_comp)
+        reasons.append(f"DataForSEO competition score: {avg_comp:.2f}")
+    else:
+        # Informational & how-to queries have easier initial indexing velocity
+        if candidate.search_intent == "informational" or candidate.page_type in ["guide", "informational"]:
+            low_competition_score = 0.85
+            reasons.append("Informational / how-to intent (high early rankability)")
+        elif candidate.search_intent == "commercial" or candidate.page_type == "listicle":
+            low_competition_score = 0.75
+            reasons.append("Commercial listicle intent")
+        else:
+            low_competition_score = 0.65
+
+    # 4. Content-Gap Match & Priority (0.0 to 1.0)
+    content_gap_score = 0.50
+    p_kw_lower = p_kw.lower()
+    title_lower = candidate.title.lower()
+
+    for gap in candidate.content_strategy.content_gaps:
+        gap_topic = gap.get("topic", "").lower()
+        gap_ideas = [k.lower() for k in gap.get("keyword_ideas", [])]
+        gap_priority = gap.get("priority", "medium")
+
+        if (
+            (p_kw_lower and p_kw_lower in gap_ideas)
+            or any(k in title_lower for k in gap_ideas)
+            or any(w in gap_topic for w in title_lower.split() if len(w) > 4)
+        ):
+            if gap_priority == "high":
+                content_gap_score = 1.0
+                reasons.append(f"Solves high-priority competitor gap: '{gap.get('topic')[:40]}...'")
+                break
+            else:
+                content_gap_score = max(content_gap_score, 0.80)
+                reasons.append(f"Solves competitor gap: '{gap.get('topic')[:40]}...'")
+
+    if candidate.priority == "high" and content_gap_score < 0.8:
+        content_gap_score = max(content_gap_score, 0.85)
+        reasons.append("High architectural priority")
+
+    # 5. Search Intent Clarity (0.0 to 1.0)
+    if candidate.search_intent in ["informational", "commercial", "transactional"]:
+        intent_clarity_score = 0.95
+        reasons.append(f"Definitive {candidate.search_intent} intent")
+    elif candidate.search_intent == "mixed" and candidate.page_type == "cluster":
+        intent_clarity_score = 0.80
+        reasons.append("Cluster hub mixed navigational/informational intent")
+    else:
+        intent_clarity_score = 0.60
+
+    # 6. Cluster Diversity Score (0.0 to 1.0)
+    cluster_count = cluster_representation_counts.get(candidate.cluster, 0)
+    cluster_diversity_score = 1.0 / (1.0 + (cluster_count * 0.15))
+    if cluster_count == 0:
+        reasons.append(f"Initial anchor representative for cluster '{candidate.cluster}'")
+
+    # Weighted Total Score
+    total_score = (
+        (audit_score * config.audit_weight)
+        + (long_tail_score * config.long_tail_weight)
+        + (low_competition_score * config.low_competition_weight)
+        + (content_gap_score * config.content_gap_weight)
+        + (intent_clarity_score * config.intent_clarity_weight)
+        + (cluster_diversity_score * config.cluster_diversity_weight)
+    )
+
+    breakdown = PageScoringBreakdown(
+        audit_score=round(audit_score, 3),
+        long_tail_score=round(long_tail_score, 3),
+        low_competition_score=round(low_competition_score, 3),
+        content_gap_score=round(content_gap_score, 3),
+        intent_clarity_score=round(intent_clarity_score, 3),
+        cluster_diversity_score=round(cluster_diversity_score, 3),
+        total_score=round(total_score, 4),
+        reasons=reasons,
+    )
+
+    rationale = "; ".join(reasons[:3])
+
+    return round(total_score, 4), breakdown, rationale
+
+
+def select_first_wave_pages(
+    manifest: PageCandidatesManifest,
+    config: Optional[FirstWaveSelectionConfig] = None,
+) -> FirstWaveSelectionManifest:
+    """
+    Select the optimal 10–20 pages for the First Wave of content generation.
+
+    Selection Logic:
+    1. Evaluates all candidates across the 6 scoring dimensions.
+    2. Guarantees inclusion of cluster hubs when include_cluster_hubs is True.
+    3. Ranks remaining candidates by total score descending.
+    4. Selects between min_pages (default 10) and max_pages (default 20),
+       or exact target_count if configured.
+    """
+    cfg = config or FirstWaveSelectionConfig()
+    logger.info("Executing First-Wave page selection algorithm...")
+    logger.info(f"Target range: {cfg.min_pages}–{cfg.max_pages} pages (include hubs: {cfg.include_cluster_hubs})")
+
+    candidates = manifest.candidates
+    total_available = len(candidates)
+
+    if total_available == 0:
+        logger.warning("No candidate pages found to select from.")
+        return FirstWaveSelectionManifest(
+            config=asdict(cfg),
+            summary={"total_candidates_evaluated": 0, "total_pages_selected": 0},
+            selected_pages=[],
+        )
+
+    # Track cluster representation for diversity scoring
+    cluster_counts: Dict[str, int] = {}
+
+    # Separate cluster hubs if mandatory
+    hub_candidates: List[NormalizedPageCandidate] = []
+    content_candidates: List[NormalizedPageCandidate] = []
+
+    for c in candidates:
+        if cfg.allowed_intents and c.search_intent not in cfg.allowed_intents:
+            continue
+        if cfg.allowed_page_types and c.page_type not in cfg.allowed_page_types:
+            continue
+
+        if c.page_type == "cluster" and cfg.include_cluster_hubs:
+            hub_candidates.append(c)
+        else:
+            content_candidates.append(c)
+
+    # Score all candidates
+    scored_candidates: List[Tuple[float, NormalizedPageCandidate, PageScoringBreakdown, str]] = []
+
+    for c in hub_candidates + content_candidates:
+        score, breakdown, rationale = score_page_candidate(c, cfg, cluster_counts)
+        scored_candidates.append((score, c, breakdown, rationale))
+
+    # Sort candidates by score descending
+    # Cluster hubs are given priority slots to anchor the topology
+    scored_hubs = [item for item in scored_candidates if item[1].page_type == "cluster"]
+    scored_content = [item for item in scored_candidates if item[1].page_type != "cluster"]
+
+    scored_hubs.sort(key=lambda x: x[0], reverse=True)
+    scored_content.sort(key=lambda x: x[0], reverse=True)
+
+    # Determine target selection size
+    if cfg.target_count is not None:
+        target_size = min(total_available, max(cfg.min_pages, min(cfg.max_pages, cfg.target_count)))
+    else:
+        # Default: scale appropriately between min_pages and max_pages based on pool size
+        target_size = min(total_available, max(cfg.min_pages, min(cfg.max_pages, total_available)))
+
+    chosen_items: List[Tuple[float, NormalizedPageCandidate, PageScoringBreakdown, str]] = []
+
+    # First add hubs
+    for item in scored_hubs:
+        chosen_items.append(item)
+        cluster_counts[item[1].cluster] = cluster_counts.get(item[1].cluster, 0) + 1
+
+    # Then fill remaining quota with top-scoring content candidates
+    remaining_quota = target_size - len(chosen_items)
+    for item in scored_content[:remaining_quota]:
+        chosen_items.append(item)
+        cluster_counts[item[1].cluster] = cluster_counts.get(item[1].cluster, 0) + 1
+
+    # In case pool was smaller than min_pages or all content candidates fit, choose all
+    if len(chosen_items) < target_size and len(scored_content) > remaining_quota:
+        extra_needed = target_size - len(chosen_items)
+        chosen_items.extend(scored_content[remaining_quota : remaining_quota + extra_needed])
+
+    # Re-sort all chosen items by score descending for final ranking
+    chosen_items.sort(key=lambda x: x[0], reverse=True)
+
+    selected_pages: List[SelectedPage] = []
+    for rank, (score, cand, breakdown, rationale) in enumerate(chosen_items, start=1):
+        target_links = [l.get("target_url") for l in cand.internal_linking.outbound_links if l.get("target_url")]
+        selected = SelectedPage(
+            rank=rank,
+            candidate_id=cand.candidate_id,
+            title=cand.title,
+            slug=cand.slug,
+            url=cand.url,
+            page_type=cand.page_type,
+            cluster=cand.cluster,
+            primary_keyword=cand.keywords.primary_keyword,
+            secondary_keywords=cand.keywords.secondary_keywords,
+            search_intent=cand.search_intent,
+            priority=cand.priority,
+            score=score,
+            score_breakdown=asdict(breakdown),
+            selection_rationale=rationale,
+            internal_link_targets=target_links,
+            target_questions=cand.keywords.question_keywords,
+        )
+        selected_pages.append(selected)
+
+    # Build excluded candidates list
+    chosen_ids = {c.candidate_id for c in selected_pages}
+    excluded = [
+        {
+            "candidate_id": item[1].candidate_id,
+            "title": item[1].title,
+            "url": item[1].url,
+            "score": item[0],
+            "reason": "Lower relative composite score in this wave",
+        }
+        for item in scored_candidates
+        if item[1].candidate_id not in chosen_ids
+    ]
+
+    # Calculate distributions
+    intent_dist: Dict[str, int] = {}
+    type_dist: Dict[str, int] = {}
+    for p in selected_pages:
+        intent_dist[p.search_intent] = intent_dist.get(p.search_intent, 0) + 1
+        type_dist[p.page_type] = type_dist.get(p.page_type, 0) + 1
+
+    avg_score = round(sum(p.score for p in selected_pages) / len(selected_pages), 4) if selected_pages else 0.0
+
+    summary = {
+        "total_candidates_evaluated": total_available,
+        "total_pages_selected": len(selected_pages),
+        "cluster_pages_selected": sum(1 for p in selected_pages if p.page_type == "cluster"),
+        "content_pages_selected": sum(1 for p in selected_pages if p.page_type != "cluster"),
+        "average_selection_score": avg_score,
+        "clusters_represented": list(cluster_counts.keys()),
+        "intent_distribution": intent_dist,
+        "page_type_distribution": type_dist,
+    }
+
+    selection_manifest = FirstWaveSelectionManifest(
+        version="0.3",
+        phase="first_wave_page_selection",
+        config=asdict(cfg),
+        summary=summary,
+        selected_pages=selected_pages,
+        excluded_candidates=excluded,
+    )
+
+    logger.info(
+        f"First-Wave selection complete: {len(selected_pages)} pages selected (Average score: {avg_score})."
+    )
+    return selection_manifest
+
+
+def save_selected_pages(
+    manifest: FirstWaveSelectionManifest,
+    output_path: Optional[Path] = None,
+) -> Path:
+    """Save First-Wave selected pages manifest to outputs/v03/selected_pages.json."""
+    target_path = output_path or SELECTED_PAGES_PATH
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    manifest_dict = asdict(manifest)
+
+    with open(target_path, "w", encoding="utf-8") as f:
+        json.dump(manifest_dict, f, indent=2, ensure_ascii=False)
+
+    logger.info(f"Saved First-Wave selected pages to: {target_path}")
+    return target_path
+
+
+def run_first_wave_selection(
+    config: Optional[FirstWaveSelectionConfig] = None,
+    output_dir: Optional[Path] = None,
+) -> Path:
+    """
+    Orchestrate candidate preparation and First-Wave page selection.
+    Saves results to outputs/v03/selected_pages.json.
+    """
+    configure_logging()
+    out_dir = output_dir or V03_OUTPUTS_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. Load artifacts
+    artifacts = load_all_pipeline_inputs()
+
+    # 2. Build candidates
+    candidates_manifest = build_unified_page_candidates(artifacts)
+    save_page_candidates(candidates_manifest, out_dir / "page_candidates.json")
+
+    # 3. Select First-Wave pages
+    selection_manifest = select_first_wave_pages(candidates_manifest, config)
+    selected_path = save_selected_pages(selection_manifest, out_dir / "selected_pages.json")
+
+    return selected_path
+
+
+def compile_page_contexts(
+    artifacts: LoadedArtifacts,
+    selection_manifest: Optional[FirstWaveSelectionManifest] = None,
+) -> List[PageContext]:
+    """Compile PageContext wrappers for generation from selected First-Wave candidates."""
+    candidates_manifest = build_unified_page_candidates(artifacts)
+    save_page_candidates(candidates_manifest)
+
+    # If no selection manifest provided, run first-wave selection
+    if selection_manifest is None:
+        selection_manifest = select_first_wave_pages(candidates_manifest)
+        save_selected_pages(selection_manifest)
+
+    selected_ids = {p.candidate_id for p in selection_manifest.selected_pages}
+
+    # Filter candidates to only those selected
+    chosen_candidates = [
+        c for c in candidates_manifest.candidates if c.candidate_id in selected_ids
+    ]
+
+    return [PageContext(candidate=c) for c in chosen_candidates]
 
 
 # ============================================================
-# STEP 3: CONTENT GENERATION GENERATOR FUNCTIONS
+# STEP 4: CONTENT GENERATION GENERATOR FUNCTIONS
 # ============================================================
 
 def generate_page_brief(context: PageContext, dry_run: bool = False) -> ContentOutlineResponse:
@@ -1109,7 +1521,7 @@ def audit_page_content(
 
 
 # ============================================================
-# STEP 4: SINGLE PAGE ORCHESTRATION & COMPOSITION
+# STEP 5: SINGLE PAGE ORCHESTRATION & COMPOSITION
 # ============================================================
 
 def compose_complete_markdown_page(
@@ -1204,7 +1616,7 @@ def process_single_page(
 
 
 # ============================================================
-# STEP 5: ARTIFACT SERIALIZATION & REPOSITORIES
+# STEP 6: ARTIFACT SERIALIZATION & REPOSITORIES
 # ============================================================
 
 def save_generated_page(result: GeneratedPageResult, pages_dir: Path) -> Tuple[Path, Path]:
@@ -1307,7 +1719,7 @@ def export_content_manifest(
 
 
 # ============================================================
-# STEP 6: MAIN PIPELINE RUNNER
+# STEP 7: MAIN PIPELINE RUNNER
 # ============================================================
 
 def run_content_generation_phase(
@@ -1316,6 +1728,8 @@ def run_content_generation_phase(
     max_pages: Optional[int] = None,
     output_dir: Optional[Path] = None,
     candidates_only: bool = False,
+    select_only: bool = False,
+    selection_config: Optional[FirstWaveSelectionConfig] = None,
 ) -> Dict[str, Any]:
     """
     Main entry point for v0.3 Content Generation Phase.
@@ -1325,7 +1739,9 @@ def run_content_generation_phase(
         target_slug: Optional slug filter to generate a single specific page.
         max_pages: Optional limit on the number of pages to generate in this run.
         output_dir: Custom destination directory for v0.3 outputs (defaults to outputs/v03).
-        candidates_only: When True, builds and saves page_candidates.json without generating content.
+        candidates_only: When True, builds and saves page_candidates.json without selecting or generating.
+        select_only: When True, builds candidates and runs First-Wave selection without generating content.
+        selection_config: Optional custom configuration for First-Wave selection.
 
     Returns:
         Summary dict containing counts, artifacts paths, and execution status.
@@ -1333,7 +1749,7 @@ def run_content_generation_phase(
     configure_logging()
     logger.info("==========================================================")
     logger.info("STARTING V0.3 CONTENT GENERATION PIPELINE")
-    logger.info(f"Candidates only: {candidates_only} | Dry-run mode: {dry_run} | Target slug: {target_slug or 'ALL'}")
+    logger.info(f"Candidates only: {candidates_only} | Select only: {select_only} | Dry-run mode: {dry_run}")
     logger.info("==========================================================")
 
     out_dir = output_dir or V03_OUTPUTS_DIR
@@ -1361,20 +1777,42 @@ def run_content_generation_phase(
             "total_candidates": len(candidates_manifest.candidates),
         }
 
-    # 3. Compile page contexts from candidates
-    page_contexts = [PageContext(candidate=c) for c in candidates_manifest.candidates]
+    # 3. First-Wave Page Selection (10–20 pages)
+    cfg = selection_config or FirstWaveSelectionConfig(
+        max_pages=max_pages or 20,
+    )
+    selection_manifest = select_first_wave_pages(candidates_manifest, cfg)
+    selected_file = save_selected_pages(selection_manifest, out_dir / "selected_pages.json")
 
-    # Apply filters if requested
+    if select_only:
+        logger.info("\n==========================================================")
+        logger.info("FIRST-WAVE PAGE SELECTION COMPLETE (Select-Only Mode)")
+        logger.info(f"  Candidates file: {candidates_file}")
+        logger.info(f"  Selected file:   {selected_file}")
+        logger.info(f"  Pages selected:  {len(selection_manifest.selected_pages)}")
+        logger.info("==========================================================")
+        return {
+            "status": "success",
+            "mode": "select_only",
+            "page_candidates_file": str(candidates_file),
+            "selected_pages_file": str(selected_file),
+            "total_selected": len(selection_manifest.selected_pages),
+        }
+
+    # 4. Compile page contexts from selected candidates
+    selected_ids = {p.candidate_id for p in selection_manifest.selected_pages}
+    chosen_candidates = [
+        c for c in candidates_manifest.candidates if c.candidate_id in selected_ids
+    ]
+    page_contexts = [PageContext(candidate=c) for c in chosen_candidates]
+
+    # Apply slug filter if requested
     if target_slug:
         page_contexts = [c for c in page_contexts if c.slug == target_slug or c.slug.strip("/") == target_slug.strip("/")]
         if not page_contexts:
-            logger.warning(f"No pages matched the target slug '{target_slug}'.")
+            logger.warning(f"No selected pages matched the target slug '{target_slug}'.")
 
-    if max_pages and max_pages > 0:
-        page_contexts = page_contexts[:max_pages]
-        logger.info(f"Constrained generation run to top {max_pages} pages.")
-
-    # 4. Process pages
+    # 5. Process pages
     results: List[GeneratedPageResult] = []
     for idx, ctx in enumerate(page_contexts, start=1):
         logger.info(f"\n[Page {idx}/{len(page_contexts)}]")
@@ -1382,13 +1820,14 @@ def run_content_generation_phase(
         save_generated_page(res, pages_dir)
         results.append(res)
 
-    # 5. Export Manifest & Summary Report
+    # 6. Export Manifest & Summary Report
     manifest_path = export_content_manifest(results, out_dir)
     report_path = generate_v03_summary_report(results, out_dir)
 
     logger.info("\n==========================================================")
     logger.info("V0.3 CONTENT GENERATION COMPLETED")
     logger.info(f"  Candidates: {candidates_file}")
+    logger.info(f"  Selected:   {selected_file}")
     logger.info(f"  Manifest:   {manifest_path}")
     logger.info(f"  Report:     {report_path}")
     logger.info(f"  Pages Saved In: {pages_dir}")
@@ -1399,6 +1838,7 @@ def run_content_generation_phase(
         "total_processed": len(results),
         "completed": len([r for r in results if r.status == "completed"]),
         "page_candidates_file": str(candidates_file),
+        "selected_pages_file": str(selected_file),
         "manifest_path": str(manifest_path),
         "report_path": str(report_path),
         "output_directory": str(out_dir),
@@ -1412,12 +1852,35 @@ def run_content_generation_phase(
 def main():
     """Command-line interface for running the v0.3 content generation pipeline."""
     parser = argparse.ArgumentParser(
-        description="v0.3 Content Generation Pipeline & Page Candidate Builder",
+        description="v0.3 Content Generation Pipeline & First-Wave Page Selector",
     )
     parser.add_argument(
         "--candidates-only",
         action="store_true",
-        help="Build and save normalized page_candidates.json without generating content",
+        help="Build and save normalized page_candidates.json without selecting or generating",
+    )
+    parser.add_argument(
+        "--select-only",
+        action="store_true",
+        help="Run candidate building and First-Wave page selection without generating content",
+    )
+    parser.add_argument(
+        "--min-pages",
+        type=int,
+        default=10,
+        help="Minimum number of pages to select in First Wave (default: 10)",
+    )
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=20,
+        help="Maximum number of pages to select in First Wave (default: 20)",
+    )
+    parser.add_argument(
+        "--target-pages",
+        type=int,
+        default=None,
+        help="Exact target number of pages to select in First Wave",
     )
     parser.add_argument(
         "--dry-run",
@@ -1431,12 +1894,6 @@ def main():
         help="Generate content only for a specific page slug",
     )
     parser.add_argument(
-        "--max-pages",
-        type=int,
-        default=None,
-        help="Limit number of pages to generate in this run",
-    )
-    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable debug-level logging",
@@ -1447,12 +1904,20 @@ def main():
     if args.verbose:
         configure_logging(logging.DEBUG)
 
+    selection_config = FirstWaveSelectionConfig(
+        min_pages=args.min_pages,
+        max_pages=args.max_pages,
+        target_count=args.target_pages,
+    )
+
     try:
         run_content_generation_phase(
             dry_run=args.dry_run,
             target_slug=args.slug,
             max_pages=args.max_pages,
             candidates_only=args.candidates_only,
+            select_only=args.select_only,
+            selection_config=selection_config,
         )
     except Exception as e:
         logger.error(f"Pipeline execution aborted due to unhandled exception: {e}", exc_info=True)
