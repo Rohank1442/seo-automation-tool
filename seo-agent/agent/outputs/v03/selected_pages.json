@@ -1,7 +1,7 @@
 {
   "version": "0.3",
   "phase": "first_wave_page_selection",
-  "generated_at": "2026-08-27T14:04:19.345467+00:00",
+  "generated_at": "2026-08-27T14:07:47.543238+00:00",
   "config": {
     "min_pages": 10,
     "max_pages": 20,
