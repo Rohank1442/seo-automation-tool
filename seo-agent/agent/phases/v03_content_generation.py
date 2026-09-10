@@ -2527,6 +2527,11 @@ def main():
         help="Run content validation on existing outputs/v03/generated_content.json",
     )
     parser.add_argument(
+        "--export-frontend",
+        action="store_true",
+        help="Export generated pages directly to Next.js / React components in generated-pages/",
+    )
+    parser.add_argument(
         "--min-pages",
         type=int,
         default=10,
@@ -2573,7 +2578,7 @@ def main():
     )
 
     try:
-        run_content_generation_phase(
+        outcome = run_content_generation_phase(
             dry_run=args.dry_run,
             target_slug=args.slug,
             max_pages=args.max_pages,
@@ -2583,6 +2588,13 @@ def main():
             validate_only=args.validate_only,
             selection_config=selection_config,
         )
+
+        if args.export_frontend:
+            from phases.v03_export_frontend import ExportConfig, export_frontend_components, load_pages_from_directory
+            pages_dir = Path(__file__).resolve().parent.parent / "outputs" / "v03" / "pages"
+            pages = load_pages_from_directory(pages_dir)
+            cfg = ExportConfig(non_interactive=True)
+            export_frontend_components(pages, cfg)
     except Exception as e:
         logger.error(f"Pipeline execution aborted due to unhandled exception: {e}", exc_info=True)
         sys.exit(1)

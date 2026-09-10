@@ -95,6 +95,11 @@ The system shifts into compounding autonomous mode:
 ```text
 seo-automation/
 ├── README.md                           # Project documentation & roadmap
+├── generated-pages/                    # Drop-in Next.js / React components (Copy directly to your site)
+│   ├── app/                            # Next.js App Router pages (app/[slug]/page.tsx)
+│   │   ├── {slug}/page.tsx
+│   │   └── ...
+│   └── README.md                       # Component usage instructions
 ├── seo-agent/
 │   ├── .env.example                    # Environment variable templates
 │   ├── .gitignore                      # Git ignore rules
@@ -106,7 +111,8 @@ seo-automation/
 │       ├── phases/                     # Pipeline execution modules
 │       │   ├── v01_research.py         # v0.1 Niche & Keyword Research
 │       │   ├── v02_architecture.py     # v0.2 Site Architecture & Setup
-│       │   └── v03_content_generation.py # v0.3 Content Generation & Validation
+│       │   ├── v03_content_generation.py # v0.3 Content Generation & Validation
+│       │   └── v03_export_frontend.py  # Interactive Next.js / React Frontend Exporter
 │       ├── prompts/                    # Pydantic schemas & prompt templates
 │       │   ├── v01_prompts.py          # v0.1 research schemas
 │       │   ├── v02_prompts.py          # v0.2 architecture schemas
@@ -187,6 +193,12 @@ python agent/phases/v03_content_generation.py --validate-only
 
 # 5. Generate content for a single specific page slug
 python agent/phases/v03_content_generation.py --slug how-to-get-free-clothes-online
+
+# 6. Interactive Frontend Export (Prompts for Next.js App/Pages Router, TS/JS, Tailwind, Output folder)
+python agent/phases/v03_export_frontend.py
+
+# 7. Non-interactive / Automated Frontend Export to generated-pages/
+python agent/phases/v03_export_frontend.py --non-interactive --framework next-app --lang ts --style tailwind
 ```
 
 ---
