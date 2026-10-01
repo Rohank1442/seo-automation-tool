@@ -166,7 +166,35 @@ DATAFORSEO_PASSWORD=your_dataforseo_password
 
 ---
 
+## 🌐 Web Dashboard & FastAPI Backend
+
+You can run the entire platform as a full-stack web application with a live dashboard and API:
+
+### 1. Start the FastAPI Backend Server
+```bash
+cd seo-agent/agent
+python -m uvicorn api.server:app --reload --port 8000
+```
+- Interactive OpenAPI Docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8000/health`
+
+### 2. Start the Next.js Web Dashboard
+```bash
+cd frontend
+npm run dev
+```
+- Open in your browser: `http://localhost:3000`
+- Submit new website ideas, watch live generation via SSE streams, inspect generated Next.js code, and monitor Google Search Console indexing in v0.4.
+
+---
+
 ## ⚡ CLI Usage & Pipeline Commands
+
+### Run v0.4 Indexing Watch & Early Signal Detection
+```bash
+# Run weekly monitoring analysis (checks index status, impressions, breakout growth & anomalies)
+python agent/phases/v04_monitoring.py --days 30
+```
 
 ### Run Full v0.3 Content Generation & Validation
 ```bash

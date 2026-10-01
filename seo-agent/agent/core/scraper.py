@@ -1,9 +1,21 @@
 import re
 import requests
-from bs4 import BeautifulSoup
 from typing import List, Dict, Any
-from ddgs import DDGS
 from core.config import SERPAPI_API_KEY, DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD
+
+try:
+    from bs4 import BeautifulSoup
+    HAS_BS4 = True
+except ImportError:
+    HAS_BS4 = False
+    BeautifulSoup = Any
+
+try:
+    from ddgs import DDGS
+    HAS_DDGS = True
+except ImportError:
+    HAS_DDGS = False
+    DDGS = Any
 
 # Standard headers to mimic a browser
 HEADERS = {
@@ -93,6 +105,17 @@ def crawl_competitor_page(url: str) -> Dict[str, Any]:
     try:
         res = requests.get(url, headers=HEADERS, timeout=10)
         res.raise_for_status()
+
+        if not HAS_BS4:
+            # Fallback regex parsing
+            title_match = re.search(r"<title[^>]*>(.*?)</title>", res.text, re.IGNORECASE | re.DOTALL)
+            if title_match:
+                result["title"] = title_match.group(1).strip()
+            h1_matches = re.findall(r"<h1[^>]*>(.*?)</h1>", res.text, re.IGNORECASE | re.DOTALL)
+            result["h1s"] = [re.sub(r"<[^>]+>", "", h).strip() for h in h1_matches]
+            words = re.findall(r"\b\w+\b", res.text)
+            result["word_count"] = len(words)
+            return result
 
         soup = BeautifulSoup(res.text, "html.parser")
 

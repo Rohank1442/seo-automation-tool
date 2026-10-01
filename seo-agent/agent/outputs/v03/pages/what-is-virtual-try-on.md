@@ -9,7 +9,7 @@ secondary_keywords: ["virtual try-on tech", "can you virtually try on clothes", 
 cluster: "Virtual Try-On Tech"
 page_type: "guide"
 schema_type: "HowTo"
-generated_at: "2026-08-27T14:12:25.133953+00:00"
+generated_at: "2026-10-01T16:41:15.274374+00:00"
 ---
 
 # What Is Virtual Try On: Everything You Need to Know
