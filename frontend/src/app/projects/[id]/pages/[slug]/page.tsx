@@ -3,7 +3,22 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Copy, Check, Code, Eye, Layers, HelpCircle, ExternalLink, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  Copy,
+  Check,
+  Code,
+  Eye,
+  Layers,
+  HelpCircle,
+  ExternalLink,
+  ShieldCheck,
+  Globe,
+  FileText,
+  ChevronDown,
+} from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api } from "@/lib/api";
 import { PageDetail } from "@/lib/types";
 
@@ -16,6 +31,7 @@ export default function PageDetailPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"preview" | "code" | "schema" | "faqs">("preview");
   const [copied, setCopied] = useState(false);
+  const [openFaqIndices, setOpenFaqIndices] = useState<Record<number, boolean>>({ 0: true });
 
   useEffect(() => {
     async function load() {
@@ -39,6 +55,10 @@ export default function PageDetailPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function toggleFaq(idx: number) {
+    setOpenFaqIndices((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  }
+
   if (loading) {
     return <div className="py-20 text-center text-gray-500">Loading page details...</div>;
   }
@@ -46,6 +66,9 @@ export default function PageDetailPage() {
   if (!page) {
     return <div className="py-20 text-center text-rose-500">Page not found.</div>;
   }
+
+  // Strip YAML frontmatter from raw markdown content if present
+  const cleanedMarkdown = page.markdown_content.replace(/^---[\s\S]*?---\n*/, "");
 
   return (
     <div className="space-y-6">
@@ -105,18 +128,144 @@ export default function PageDetailPage() {
 
       {/* Tab Panels */}
       {tab === "preview" && (
-        <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-800 shadow-sm max-w-4xl mx-auto space-y-6">
-          <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-xs space-y-1 font-mono">
-            <div><strong className="text-gray-700 dark:text-gray-300">SEO Title:</strong> {page.title}</div>
-            <div><strong className="text-gray-700 dark:text-gray-300">Meta Description:</strong> {page.meta_description}</div>
-            <div><strong className="text-gray-700 dark:text-gray-300">Canonical:</strong> {page.canonical_url}</div>
+        <div className="space-y-6 max-w-4xl mx-auto">
+          {/* SEO Metadata Card */}
+          <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm text-xs space-y-1.5 font-mono text-gray-700">
+            <div className="flex items-center space-x-2 pb-1 border-b border-gray-100 text-[11px] font-sans font-semibold text-gray-500 uppercase tracking-wider">
+              <Globe className="w-3.5 h-3.5 text-blue-600" />
+              <span>SEO Meta Tag Inspection</span>
+            </div>
+            <div className="pt-1"><strong className="text-gray-900 font-medium">Title:</strong> {page.title}</div>
+            <div><strong className="text-gray-900 font-medium">Meta Description:</strong> {page.meta_description}</div>
+            <div><strong className="text-gray-900 font-medium">Canonical URL:</strong> {page.canonical_url}</div>
+            <div><strong className="text-gray-900 font-medium">Robots:</strong> {page.robots}</div>
           </div>
 
-          <div className="prose prose-blue dark:prose-invert max-w-none">
-            <h1 className="text-3xl font-extrabold">{page.h1}</h1>
-            <div className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
-              {page.markdown_content.replace(/^---[\s\S]*?---\n*/, "")}
+          {/* Browser Window Mockup with Pure White Background */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden text-gray-900">
+            {/* Browser chrome header bar */}
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="w-3 h-3 rounded-full bg-red-400 inline-block" />
+                <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block" />
+                <span className="w-3 h-3 rounded-full bg-green-400 inline-block" />
+              </div>
+              <div className="px-4 py-1 rounded-md bg-white border border-gray-200 text-xs font-mono text-gray-500 max-w-md w-full text-center truncate shadow-inner">
+                {page.canonical_url}
+              </div>
+              <div className="w-12 text-right">
+                <span className="inline-flex items-center text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  Live
+                </span>
+              </div>
             </div>
+
+            {/* Article Content on Pure White (#ffffff) Canvas */}
+            <article className="p-8 sm:p-12 bg-white text-gray-900">
+              <div className="prose prose-neutral max-w-none prose-headings:text-gray-900 prose-headings:font-bold prose-p:text-gray-700 prose-p:leading-relaxed prose-li:text-gray-700 prose-a:text-blue-600 prose-a:underline hover:prose-a:text-blue-800 prose-strong:text-gray-900">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    a: ({ href, children, ...props }) => {
+                      if (href && href.startsWith("/")) {
+                        return (
+                          <Link
+                            href={`/projects/${projectId}/pages${href.replace(/\/$/, "")}`}
+                            className="text-blue-600 font-medium underline underline-offset-2 hover:text-blue-800 inline-flex items-center gap-0.5"
+                            {...props}
+                          >
+                            <span>{children}</span>
+                            <ExternalLink className="w-3 h-3 inline opacity-60" />
+                          </Link>
+                        );
+                      }
+                      return (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 font-medium underline underline-offset-2 hover:text-blue-800 inline-flex items-center gap-0.5"
+                          {...props}
+                        >
+                          <span>{children}</span>
+                          <ExternalLink className="w-3 h-3 inline opacity-60" />
+                        </a>
+                      );
+                    },
+                  }}
+                >
+                  {cleanedMarkdown}
+                </ReactMarkdown>
+              </div>
+
+              {/* Verified Internal Links Section */}
+              {page.internal_links && page.internal_links.length > 0 && (
+                <div className="mt-12 pt-8 border-t border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    <span>Related Articles & Recommended Guides</span>
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {page.internal_links.map((link, idx) => (
+                      <Link
+                        key={idx}
+                        href={`/projects/${projectId}/pages/${link.target_slug}`}
+                        className="p-3.5 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50/40 transition-all flex items-center justify-between group"
+                      >
+                        <div className="space-y-0.5 min-w-0 pr-2">
+                          <span className="text-xs font-semibold text-gray-900 group-hover:text-blue-600 block truncate">
+                            {link.anchor_text || link.target_slug}
+                          </span>
+                          <span className="text-[11px] font-mono text-gray-400 block truncate">
+                            {link.target_url}
+                          </span>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 shrink-0" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* FAQs Accordion embedded directly in the page preview */}
+              {page.faqs && page.faqs.length > 0 && (
+                <div className="mt-12 pt-8 border-t border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-indigo-600" />
+                    <span>Frequently Asked Questions</span>
+                  </h3>
+                  <div className="space-y-3">
+                    {page.faqs.map((faq, idx) => {
+                      const isOpen = !!openFaqIndices[idx];
+                      return (
+                        <div
+                          key={idx}
+                          className="rounded-xl border border-gray-200 bg-gray-50/50 overflow-hidden transition-all"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => toggleFaq(idx)}
+                            className="w-full p-4 text-left flex items-center justify-between gap-4 font-semibold text-sm text-gray-900 hover:bg-gray-100/50 transition-colors"
+                          >
+                            <span>{faq.question}</span>
+                            <ChevronDown
+                              className={`w-4 h-4 text-gray-500 transition-transform duration-200 shrink-0 ${
+                                isOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                          {isOpen && (
+                            <div className="px-4 pb-4 pt-1 text-xs text-gray-600 leading-relaxed border-t border-gray-200/50 bg-white">
+                              {faq.answer}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </article>
           </div>
         </div>
       )}
@@ -144,10 +293,10 @@ export default function PageDetailPage() {
           {page.faqs.map((faq, idx) => (
             <div
               key={idx}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 space-y-2"
+              className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-2"
             >
-              <h3 className="font-bold text-sm text-gray-900 dark:text-white">{faq.question}</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{faq.answer}</p>
+              <h3 className="font-bold text-sm text-gray-900">{faq.question}</h3>
+              <p className="text-xs text-gray-600 leading-relaxed">{faq.answer}</p>
             </div>
           ))}
         </div>
