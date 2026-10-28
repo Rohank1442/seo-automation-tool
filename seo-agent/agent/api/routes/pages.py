@@ -10,9 +10,12 @@ from fastapi import APIRouter, HTTPException
 from api.schemas import (
     ExportFrontendRequest,
     ExportFrontendResponse,
+    GenerateWaveRequest,
+    GenerateWaveResponse,
     PageDetailResponse,
     PageSummaryResponse,
 )
+from phases.v03 import generate_additional_wave
 from phases.v03_export_frontend import (
     DEFAULT_EXPORT_DIR,
     ExportConfig,
@@ -159,3 +162,32 @@ def export_pages_to_frontend(project_id: str, payload: ExportFrontendRequest):
         styling=payload.styling,
         message=f"Exported {count} components to {dest}. Ready for copy-paste into your site.",
     )
+
+
+@router.post("/generate-wave", response_model=GenerateWaveResponse)
+def trigger_additional_wave(project_id: str, payload: GenerateWaveRequest):
+    """
+    Generate an additional wave of pages without overwriting existing content.
+    Supports:
+      - Option A: 'next_best' (Top unbuilt candidates ranked across all clusters)
+      - Option B: 'specific_cluster' (Candidates for a selected topical cluster)
+    """
+    try:
+        result = generate_additional_wave(
+            strategy_name=payload.strategy,
+            batch_size=payload.batch_size,
+            cluster_name=payload.cluster_name,
+            dry_run=payload.dry_run,
+        )
+        return GenerateWaveResponse(
+            status=result["status"],
+            strategy_applied=result.get("strategy_applied", payload.strategy),
+            cluster_name=result.get("cluster_name"),
+            pages_generated_count=result.get("pages_generated_count", 0),
+            generated_slugs=result.get("generated_slugs", []),
+            total_project_pages=result.get("total_project_pages", 0),
+            message=result.get("message", "Wave completed successfully."),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Wave generation failed: {str(e)}")
+

@@ -155,6 +155,41 @@ class ExportFrontendResponse(BaseModel):
 
 
 # ============================================================
+# MULTI-WAVE EXPANSION SCHEMAS
+# ============================================================
+
+class GenerateWaveRequest(BaseModel):
+    strategy: str = Field(
+        default="next_best",
+        description="Candidate selection strategy: 'next_best' (Option A) or 'specific_cluster' (Option B)"
+    )
+    cluster_name: Optional[str] = Field(
+        default=None,
+        description="Target cluster name (required when strategy is 'specific_cluster')"
+    )
+    batch_size: int = Field(
+        default=25,
+        ge=1,
+        le=100,
+        description="Number of new pages to generate in this wave (e.g. 10, 25, 50)"
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="Simulate generation without making live Gemini LLM API calls"
+    )
+
+
+class GenerateWaveResponse(BaseModel):
+    status: str = "success"
+    strategy_applied: str
+    cluster_name: Optional[str] = None
+    pages_generated_count: int
+    generated_slugs: List[str] = []
+    total_project_pages: int
+    message: str
+
+
+# ============================================================
 # v0.4 INDEXING WATCH & MONITORING SCHEMAS
 # ============================================================
 
