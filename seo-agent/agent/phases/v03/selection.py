@@ -9,13 +9,28 @@ Implements the Strategy Pattern (GoF) for deciding which page candidates to gene
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Set, Tuple
+from dataclasses import asdict
+from pathlib import Path
+import json
+import logging
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from phases.v03.models import (
     FirstWaveSelectionConfig,
+    FirstWaveSelectionManifest,
     NormalizedPageCandidate,
+    PageCandidatesManifest,
     PageScoringBreakdown,
+    SelectedPage,
 )
+
+logger = logging.getLogger("v03.selection")
+
+# Path constants
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+OUTPUTS_DIR = BASE_DIR / "outputs"
+V03_OUTPUTS_DIR = OUTPUTS_DIR / "v03"
+SELECTED_PAGES_PATH = V03_OUTPUTS_DIR / "selected_pages.json"
 
 
 def score_page_candidate(
@@ -151,6 +166,164 @@ def score_page_candidate(
 
     rationale = "; ".join(reasons[:3])
     return round(total_score, 4), breakdown, rationale
+
+
+# ============================================================
+# FIRST-WAVE SELECTION ALGORITHM (ORIGINAL COMPLETE ALGO)
+# ============================================================
+
+def select_first_wave_pages(
+    manifest: PageCandidatesManifest,
+    config: Optional[FirstWaveSelectionConfig] = None,
+) -> FirstWaveSelectionManifest:
+    """Select optimal 10–20 pages for First Wave content generation."""
+    cfg = config or FirstWaveSelectionConfig()
+    logger.info("Executing First-Wave page selection algorithm...")
+
+    candidates = manifest.candidates
+    total_available = len(candidates)
+
+    if total_available == 0:
+        return FirstWaveSelectionManifest(
+            config=asdict(cfg),
+            summary={"total_candidates_evaluated": 0, "total_pages_selected": 0},
+            selected_pages=[],
+        )
+
+    cluster_counts: Dict[str, int] = {}
+    hub_candidates: List[NormalizedPageCandidate] = []
+    content_candidates: List[NormalizedPageCandidate] = []
+
+    for c in candidates:
+        if cfg.allowed_intents and c.search_intent not in cfg.allowed_intents:
+            continue
+        if cfg.allowed_page_types and c.page_type not in cfg.allowed_page_types:
+            continue
+
+        if c.page_type == "cluster" and cfg.include_cluster_hubs:
+            hub_candidates.append(c)
+        else:
+            content_candidates.append(c)
+
+    scored_candidates: List[Tuple[float, NormalizedPageCandidate, PageScoringBreakdown, str]] = []
+
+    for c in hub_candidates + content_candidates:
+        score, breakdown, rationale = score_page_candidate(c, cfg, cluster_counts)
+        scored_candidates.append((score, c, breakdown, rationale))
+
+    scored_hubs = [item for item in scored_candidates if item[1].page_type == "cluster"]
+    scored_content = [item for item in scored_candidates if item[1].page_type != "cluster"]
+
+    scored_hubs.sort(key=lambda x: x[0], reverse=True)
+    scored_content.sort(key=lambda x: x[0], reverse=True)
+
+    if cfg.target_count is not None:
+        target_size = min(total_available, max(cfg.min_pages, min(cfg.max_pages, cfg.target_count)))
+    else:
+        target_size = min(total_available, max(cfg.min_pages, min(cfg.max_pages, total_available)))
+
+    chosen_items: List[Tuple[float, NormalizedPageCandidate, PageScoringBreakdown, str]] = []
+
+    for item in scored_hubs:
+        chosen_items.append(item)
+        cluster_counts[item[1].cluster] = cluster_counts.get(item[1].cluster, 0) + 1
+
+    remaining_quota = target_size - len(chosen_items)
+    for item in scored_content[:remaining_quota]:
+        chosen_items.append(item)
+        cluster_counts[item[1].cluster] = cluster_counts.get(item[1].cluster, 0) + 1
+
+    if len(chosen_items) < target_size and len(scored_content) > remaining_quota:
+        extra_needed = target_size - len(chosen_items)
+        chosen_items.extend(scored_content[remaining_quota : remaining_quota + extra_needed])
+
+    chosen_items.sort(key=lambda x: x[0], reverse=True)
+
+    selected_pages: List[SelectedPage] = []
+    for rank, (score, cand, breakdown, rationale) in enumerate(chosen_items, start=1):
+        target_links = [l.get("target_url") for l in cand.internal_linking.outbound_links if l.get("target_url")]
+        selected = SelectedPage(
+            rank=rank,
+            candidate_id=cand.candidate_id,
+            title=cand.title,
+            slug=cand.slug,
+            url=cand.url,
+            page_type=cand.page_type,
+            cluster=cand.cluster,
+            primary_keyword=cand.keywords.primary_keyword,
+            secondary_keywords=cand.keywords.secondary_keywords,
+            search_intent=cand.search_intent,
+            priority=cand.priority,
+            score=score,
+            score_breakdown=asdict(breakdown),
+            selection_rationale=rationale,
+            internal_link_targets=target_links,
+            target_questions=cand.keywords.question_keywords,
+        )
+        selected_pages.append(selected)
+
+    chosen_ids = {c.candidate_id for c in selected_pages}
+    excluded = [
+        {
+            "candidate_id": item[1].candidate_id,
+            "title": item[1].title,
+            "url": item[1].url,
+            "score": item[0],
+            "reason": "Lower relative composite score in this wave",
+        }
+        for item in scored_candidates
+        if item[1].candidate_id not in chosen_ids
+    ]
+
+    intent_dist: Dict[str, int] = {}
+    type_dist: Dict[str, int] = {}
+    for p in selected_pages:
+        intent_dist[p.search_intent] = intent_dist.get(p.search_intent, 0) + 1
+        type_dist[p.page_type] = type_dist.get(p.page_type, 0) + 1
+
+    avg_score = round(sum(p.score for p in selected_pages) / len(selected_pages), 4) if selected_pages else 0.0
+
+    summary = {
+        "total_candidates_evaluated": total_available,
+        "total_pages_selected": len(selected_pages),
+        "cluster_pages_selected": sum(1 for p in selected_pages if p.page_type == "cluster"),
+        "content_pages_selected": sum(1 for p in selected_pages if p.page_type != "cluster"),
+        "average_selection_score": avg_score,
+        "clusters_represented": list(cluster_counts.keys()),
+        "intent_distribution": intent_dist,
+        "page_type_distribution": type_dist,
+    }
+
+    selection_manifest = FirstWaveSelectionManifest(
+        version="0.3",
+        phase="first_wave_page_selection",
+        config=asdict(cfg),
+        summary=summary,
+        selected_pages=selected_pages,
+        excluded_candidates=excluded,
+    )
+
+    logger.info(
+        f"First-Wave selection complete: {len(selected_pages)} pages selected (Average score: {avg_score})."
+    )
+    return selection_manifest
+
+
+def save_selected_pages(
+    manifest: FirstWaveSelectionManifest,
+    output_path: Optional[Path] = None,
+) -> Path:
+    """Save First-Wave selected pages manifest to outputs/v03/selected_pages.json."""
+    target_path = output_path or SELECTED_PAGES_PATH
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    manifest_dict = asdict(manifest)
+
+    with open(target_path, "w", encoding="utf-8") as f:
+        json.dump(manifest_dict, f, indent=2, ensure_ascii=False)
+
+    logger.info(f"Saved First-Wave selected pages to: {target_path}")
+    return target_path
 
 
 # ============================================================
