@@ -65,6 +65,29 @@ export const api = {
     });
   },
 
+  async generatePagesWave(
+    projectId: string,
+    data: {
+      strategy: "next_best" | "specific_cluster";
+      cluster_name?: string;
+      batch_size: number;
+      dry_run?: boolean;
+    }
+  ): Promise<{
+    status: string;
+    strategy_applied: string;
+    cluster_name?: string;
+    pages_generated_count: number;
+    generated_slugs: string[];
+    total_project_pages: number;
+    message: string;
+  }> {
+    return fetchJson(`${API_BASE}/projects/${projectId}/pages/generate-wave`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
   // v0.4 Monitoring
   async getMonitoringDashboard(projectId: string): Promise<MonitoringDashboardData> {
     return fetchJson<MonitoringDashboardData>(`${API_BASE}/monitoring/${projectId}/dashboard`);
