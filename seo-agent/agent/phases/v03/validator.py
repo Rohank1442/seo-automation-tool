@@ -3,7 +3,7 @@ v0.3 Content Generation & Validation — Validator & Exporter.
 
 Handles:
 - Exhaustive 8-check content validation per page.
-- Cross-page site-wide checks (duplicate metadata, keyword cannibalization, orphan pages).
+- Cross-page site-wide checks (duplicate metadata, keyword cannibalization, orphan links).
 - Serialization of generated_content.json, content_manifest.json, and summary reports.
 """
 
@@ -309,9 +309,159 @@ def perform_full_content_validation(
         "page_validations": page_validations,
     }
 
-    target_path = output_path or (artifacts.url_architecture and Path("outputs/v03/content_validation.json"))
+    target_path = output_path or Path("outputs/v03/content_validation.json")
     target_path.parent.mkdir(parents=True, exist_ok=True)
     with open(target_path, "w", encoding="utf-8") as f:
         json.dump(validation_payload, f, indent=2, ensure_ascii=False)
 
     return validation_payload, target_path
+
+
+def export_generated_content_json(
+    results: List[GeneratedPageResult],
+    briefs_manifest: Dict[str, Any],
+    output_dir: Path,
+) -> Path:
+    """Export all generated pages to outputs/v03/generated_content.json."""
+    target_path = output_dir / "generated_content.json"
+    completed_pages = [r for r in results if r.status == "completed"]
+    total_words = sum(r.word_count for r in completed_pages)
+    avg_words = int(total_words / len(completed_pages)) if completed_pages else 0
+    total_links = sum(len(r.embedded_internal_links) for r in completed_pages)
+    avg_score = (
+        round(sum(r.audit.get("overall_score", 0) for r in completed_pages if r.audit) / len(completed_pages), 2)
+        if completed_pages
+        else 0.0
+    )
+
+    pages_data = []
+    for r in results:
+        pages_data.append({
+            "page_id": r.page_id,
+            "slug": r.slug,
+            "url": r.url,
+            "canonical_url": r.metadata.get("canonical_url", "") if r.metadata else "",
+            "page_type": r.page_type,
+            "cluster": r.cluster,
+            "primary_keyword": r.primary_keyword,
+            "secondary_keywords": r.secondary_keywords,
+            "search_intent": r.brief.get("search_intent", "") if r.brief else "",
+            "title": r.brief.get("title_recommendation", r.title) if r.brief else r.title,
+            "h1": r.brief.get("h1", r.title) if r.brief else r.title,
+            "meta_title": r.metadata.get("seo_title", "") if r.metadata else "",
+            "meta_description": r.metadata.get("meta_description", "") if r.metadata else "",
+            "schema_type": r.metadata.get("schema_type", "Article") if r.metadata else "Article",
+            "robots": r.metadata.get("robots", "index, follow") if r.metadata else "index, follow",
+            "markdown_content": r.markdown_content,
+            "faq_items": r.faq.get("faq_items", []) if r.faq else [],
+            "embedded_internal_links": r.embedded_internal_links,
+            "word_count": r.word_count,
+            "quality_audit": r.audit,
+            "status": r.status,
+            "generated_at": r.generated_at,
+            "error": r.error,
+        })
+
+    payload = {
+        "version": "0.3",
+        "phase": "content_generation",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": {
+            "total_pages_generated": len(completed_pages),
+            "failed_pages": len(results) - len(completed_pages),
+            "total_word_count": total_words,
+            "average_words_per_page": avg_words,
+            "total_internal_links_embedded": total_links,
+            "average_quality_score": avg_score,
+        },
+        "pages": pages_data,
+    }
+
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+
+    return target_path
+
+
+def generate_v03_summary_report(
+    results: List[GeneratedPageResult],
+    output_dir: Path,
+) -> Path:
+    """Generate executive Markdown summary report for v0.3 content generation."""
+    report_path = output_dir / "content_generation_report.md"
+
+    total_pages = len(results)
+    completed_pages = [r for r in results if r.status == "completed"]
+    failed_pages = [r for r in results if r.status == "failed"]
+    total_words = sum(r.word_count for r in completed_pages)
+    avg_words = int(total_words / len(completed_pages)) if completed_pages else 0
+    avg_score = (
+        int(sum(r.audit.get("overall_score", 0) for r in completed_pages if r.audit) / len(completed_pages))
+        if completed_pages
+        else 0
+    )
+
+    lines = [
+        "# v0.3 — Content Generation Phase Report",
+        f"\n**Generated at**: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
+        f"- **Total Pages Targeted**: {total_pages}",
+        f"- **Successfully Generated**: {len(completed_pages)}",
+        f"- **Failed / Incomplete**: {len(failed_pages)}",
+        f"- **Total Word Count**: {total_words:,} words",
+        f"- **Average Words per Page**: {avg_words:,} words",
+        f"- **Average Quality Audit Score**: {avg_score}/100\n",
+        "## Generated Pages Manifest\n",
+        "| Page Title | URL | Type | Primary Keyword | Words | Audit Score | Internal Links | Status |",
+        "|---|---|---|---|---:|---:|---:|---|",
+    ]
+
+    for r in results:
+        audit_score = r.audit.get("overall_score", "N/A") if r.audit else "N/A"
+        kw = r.primary_keyword or "-"
+        links_count = len(r.embedded_internal_links)
+        lines.append(
+            f"| {r.title} | `{r.url}` | {r.page_type} | {kw} | {r.word_count} | {audit_score} | {links_count} | {r.status} |"
+        )
+
+    if failed_pages:
+        lines.append("\n## Failures & Errors\n")
+        for f_page in failed_pages:
+            lines.append(f"- **{f_page.title}** (`{f_page.url}`): {f_page.error}")
+
+    lines.append("\n## Next Steps (v0.4 Indexing & Deployment Prep)\n")
+    lines.append("1. Verify internal links render with correct HTTP status codes in the frontend.")
+    lines.append("2. Ingest generated content from `generated_content.json` into Next.js App Router / CMS.")
+    lines.append("3. Submit sitemap.xml to Google Search Console for indexing watch.")
+
+    report_content = "\n".join(lines)
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write(report_content)
+
+    return report_path
+
+
+def export_content_manifest(
+    results: List[GeneratedPageResult],
+    output_dir: Path,
+) -> Path:
+    """Export machine-readable manifest of all generated pages for v0.4 consumption."""
+    manifest_path = output_dir / "content_manifest.json"
+
+    manifest_data = {
+        "version": "0.3",
+        "phase": "content_generation",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": {
+            "total_pages": len(results),
+            "completed": len([r for r in results if r.status == "completed"]),
+            "failed": len([r for r in results if r.status == "failed"]),
+            "total_words": sum(r.word_count for r in results if r.status == "completed"),
+        },
+        "pages": [asdict(r) for r in results],
+    }
+
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(manifest_data, f, indent=2, ensure_ascii=False)
+
+    return manifest_path

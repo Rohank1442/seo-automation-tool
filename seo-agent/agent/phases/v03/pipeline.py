@@ -452,3 +452,111 @@ def create_default_generation_pipeline(output_dir: Path) -> PageGenerationPipeli
             PersistPageStep(output_dir=output_dir),
         ]
     )
+
+
+# ============================================================
+# FUNCTION-LEVEL INTERFACE FOR BACKWARD COMPATIBILITY
+# ============================================================
+
+def generate_structured_content_brief(context: PageContext, dry_run: bool = False) -> Dict[str, Any]:
+    """Compatibility wrapper around GenerateBriefStep."""
+    res = GeneratedPageResult(
+        page_id=context.page_id,
+        slug=context.slug,
+        url=context.url,
+        title=context.title,
+        page_type=context.page_type,
+        cluster=context.cluster,
+        primary_keyword=context.primary_keyword,
+        secondary_keywords=context.secondary_keywords,
+    )
+    step = GenerateBriefStep()
+    step.execute(res, context, dry_run=dry_run)
+    return res.brief or {}
+
+
+def generate_all_content_briefs(
+    selected_manifest: Any,
+    candidates_manifest: Any,
+    dry_run: bool = False,
+    output_path: Optional[Path] = None,
+) -> Tuple[Dict[str, Any], Path]:
+    """Generate and persist structured content briefs for all First-Wave selected pages."""
+    logger.info("==========================================================")
+    logger.info(f"GENERATING CONTENT BRIEFS FOR {len(selected_manifest.selected_pages)} SELECTED PAGES")
+    logger.info("==========================================================")
+
+    candidate_map = {c.candidate_id: c for c in candidates_manifest.candidates}
+    briefs_list: List[Dict[str, Any]] = []
+
+    for idx, sel_page in enumerate(selected_manifest.selected_pages, start=1):
+        cand = candidate_map.get(sel_page.candidate_id)
+        if not cand:
+            continue
+        ctx = PageContext(candidate=cand)
+        brief_data = generate_structured_content_brief(ctx, dry_run=dry_run)
+        briefs_list.append(brief_data)
+
+    total_words = sum(
+        b.get("content_requirements", {}).get("estimated_word_count", 1200) for b in briefs_list
+    )
+    total_sections = sum(len(b.get("outline", [])) for b in briefs_list)
+    total_links = sum(len(b.get("internal_link_targets", [])) for b in briefs_list)
+
+    summary = {
+        "total_briefs": len(briefs_list),
+        "total_target_words": total_words,
+        "average_target_words": int(total_words / len(briefs_list)) if briefs_list else 0,
+        "average_sections_per_brief": round(total_sections / len(briefs_list), 1) if briefs_list else 0,
+        "average_internal_links_per_brief": round(total_links / len(briefs_list), 1) if briefs_list else 0,
+        "schema_types_breakdown": {
+            s_type: sum(1 for b in briefs_list if b.get("schema_type") == s_type)
+            for s_type in set(b.get("schema_type", "Article") for b in briefs_list)
+        },
+    }
+
+    content_briefs_manifest = {
+        "version": "0.3",
+        "phase": "content_brief_generation",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "summary": summary,
+        "briefs": briefs_list,
+    }
+
+    target_path = output_path or Path("outputs/v03/content_briefs.json")
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_path, "w", encoding="utf-8") as f:
+        json.dump(content_briefs_manifest, f, indent=2, ensure_ascii=False)
+
+    return content_briefs_manifest, target_path
+
+
+def process_single_page_from_brief(
+    context: PageContext,
+    brief: Dict[str, Any],
+    dry_run: bool = False,
+) -> GeneratedPageResult:
+    """Execute end-to-end content generation pipeline for a single page from its brief."""
+    res = GeneratedPageResult(
+        page_id=context.page_id,
+        slug=context.slug,
+        url=context.url,
+        title=context.title,
+        page_type=context.page_type,
+        cluster=context.cluster,
+        primary_keyword=context.primary_keyword,
+        secondary_keywords=context.secondary_keywords,
+        brief=brief,
+    )
+
+    steps: List[PipelineStep] = [
+        DraftContentStep(),
+        EnrichFaqStep(),
+        ComposeDocumentStep(),
+        AuditQualityStep(),
+    ]
+    for step in steps:
+        step.execute(res, context, dry_run=dry_run)
+
+    return res
+
