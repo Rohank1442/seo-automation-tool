@@ -7,11 +7,29 @@ from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from fastapi.responses import StreamingResponse
 
-from api.routes.projects import PROJECTS_STORE
 from api.schemas import PipelineRunRequest, PipelineStatusResponse
+from core.db import (
+    ProjectStoreError,
+    ProjectStoreUnavailable,
+    get_project_record,
+    update_project_record,
+)
 from services.pipeline_service import PipelineService
 
 router = APIRouter(prefix="/pipeline", tags=["Pipeline Execution"])
+
+
+def _project_or_404(project_id: str) -> dict:
+    try:
+        project = get_project_record(project_id)
+    except ProjectStoreUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if project is None:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+    return project
 
 
 @router.post("/{project_id}/run")
@@ -24,11 +42,13 @@ async def trigger_pipeline_run(
     Trigger full or partial pipeline execution (v0.1 -> v0.2 -> v0.3).
     Returns immediately with run ID. Use SSE endpoint `/stream/{project_id}` for live progress.
     """
-    if project_id not in PROJECTS_STORE:
-        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
-
-    project = PROJECTS_STORE[project_id]
-    project["status"] = "running"
+    _project_or_404(project_id)
+    try:
+        update_project_record(project_id, {"status": "running"})
+    except ProjectStoreUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return {
         "status": "started",
@@ -50,10 +70,8 @@ async def stream_pipeline_progress(
     Server-Sent Events (SSE) stream yielding real-time progress events
     for v0.1, v0.2, v0.3, and frontend compilation.
     """
-    if project_id not in PROJECTS_STORE:
-        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
-
-    user_idea = PROJECTS_STORE[project_id].get("raw_description", "")
+    project = _project_or_404(project_id)
+    user_idea = project.get("raw_description", "")
 
     async def event_generator():
         async for event in PipelineService.run_pipeline_stream(
@@ -79,8 +97,7 @@ async def stream_pipeline_progress(
 @router.get("/{project_id}/status", response_model=PipelineStatusResponse)
 def get_pipeline_status(project_id: str):
     """Poll pipeline execution status and completed artifacts."""
-    if project_id not in PROJECTS_STORE:
-        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+    _project_or_404(project_id)
 
     run_status = PipelineService.get_run_status(project_id)
     return PipelineStatusResponse(

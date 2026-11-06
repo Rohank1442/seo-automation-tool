@@ -13,6 +13,14 @@ from core.config import SUPABASE_KEY, SUPABASE_URL
 
 logger = logging.getLogger("db")
 
+
+class ProjectStoreUnavailable(RuntimeError):
+    """Raised when the durable project database is not configured or available."""
+
+
+class ProjectStoreError(RuntimeError):
+    """Raised when a project database operation fails."""
+
 try:
     from supabase import Client, create_client
     HAS_SUPABASE = True
@@ -40,6 +48,85 @@ def get_db_client() -> Optional[Client]:
             logger.warning(f"Failed to initialize Supabase client ({e}). Falling back to local storage.")
             _client = None
     return _client
+
+
+def _require_project_db_client() -> Client:
+    """Return the configured Supabase client without falling back to memory."""
+    if not HAS_SUPABASE or not SUPABASE_URL or not SUPABASE_KEY:
+        raise ProjectStoreUnavailable(
+            "Project storage requires SUPABASE_URL and SUPABASE_KEY."
+        )
+
+    client = get_db_client()
+    if client is None:
+        raise ProjectStoreUnavailable("Could not initialize the project database client.")
+    return client
+
+
+def create_project_record(project_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Create a dashboard project in the durable projects table."""
+    client = _require_project_db_client()
+    try:
+        response = client.table("projects").insert(project_data).execute()
+    except Exception as exc:
+        logger.exception("Supabase create project record failed")
+        raise ProjectStoreError("Could not create the project record.") from exc
+
+    if not response.data:
+        raise ProjectStoreError("Project insert returned no record.")
+    return response.data[0]
+
+
+def list_project_records() -> List[Dict[str, Any]]:
+    """List dashboard projects from the durable projects table."""
+    client = _require_project_db_client()
+    try:
+        response = client.table("projects").select("*").order("created_at").execute()
+    except Exception as exc:
+        logger.exception("Supabase list project records failed")
+        raise ProjectStoreError("Could not list project records.") from exc
+    return response.data or []
+
+
+def get_project_record(project_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch one dashboard project by its project ID."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("projects")
+            .select("*")
+            .eq("id", project_id)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase get project record failed")
+        raise ProjectStoreError("Could not retrieve the project record.") from exc
+
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
+def update_project_record(
+    project_id: str,
+    updates: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    """Update one dashboard project and return its persisted row."""
+    client = _require_project_db_client()
+    values = {**updates, "updated_at": datetime.now(timezone.utc).isoformat()}
+    try:
+        response = (
+            client.table("projects")
+            .update(values)
+            .eq("id", project_id)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase update project record failed")
+        raise ProjectStoreError("Could not update the project record.") from exc
+
+    rows = response.data or []
+    return rows[0] if rows else None
 
 
 def create_project(raw_description: str) -> Dict[str, Any]:
