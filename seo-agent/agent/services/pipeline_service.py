@@ -15,8 +15,19 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from phases.v01_research import run_research_phase
 from phases.v02_architecture import run_v02_architecture as run_architecture_phase
+from phases.v02_group_audit import main as run_v02_group_audit
+from phases.v02_internal_linking import main as run_v02_internal_linking
+from phases.v02_keyword_grouping import run_v02_keyword_grouping
+from phases.v02_site_foundation import run_v02_site_foundation
+from phases.v02_technical_seo import main as run_v02_technical_seo
+from phases.v02_url_architecture import run_v02_url_architecture
 from phases.v03_content_generation import run_content_generation_phase
-from phases.v03_export_frontend import ExportConfig, export_frontend_components, load_pages_from_directory
+from phases.v03_export_frontend import (
+    DEFAULT_EXPORT_DIR,
+    ExportConfig,
+    export_frontend_components,
+    load_pages_from_directory,
+)
 from phases.v04_monitoring import run_v04_monitoring
 
 logger = logging.getLogger("pipeline_service")
@@ -45,6 +56,7 @@ class PipelineService:
     async def run_pipeline_stream(
         project_id: str,
         user_idea: str,
+        target_domain: str = "https://example.com",
         phases: Optional[List[str]] = None,
         dry_run: bool = False,
         min_pages: int = 10,
@@ -66,6 +78,7 @@ class PipelineService:
             "phases_completed": [],
             "message": "Starting SEO Automation Pipeline...",
         }
+        project_outputs_dir = OUTPUTS_DIR / "projects" / project_id
 
         def make_event(phase: str, step: str, message: str, progress: int, data_preview: Optional[Dict[str, Any]] = None, status: str = "in_progress") -> Dict[str, Any]:
             event = {
@@ -98,12 +111,29 @@ class PipelineService:
                 # Run research phase synchronously in worker thread if needed
                 loop = asyncio.get_event_loop()
                 # Run research with provided problem statement or dry-run fallback
-                await loop.run_in_executor(None, lambda: run_research_phase(custom_idea=user_idea, dry_run=dry_run))
+                await loop.run_in_executor(
+                    None,
+                    lambda: run_research_phase(
+                        custom_idea=user_idea,
+                        project_id=project_id,
+                        output_dir=project_outputs_dir,
+                        target_domain=target_domain,
+                    ),
+                )
             except Exception as e:
-                logger.warning(f"Research phase exception (falling back to existing outputs): {e}")
+                logger.exception("Research phase failed for project %s", project_id)
+                ACTIVE_RUNS[project_id]["status"] = "failed"
+                yield make_event(
+                    "v01_research",
+                    "failed",
+                    f"Research phase failed: {e}",
+                    18,
+                    status="error",
+                )
+                return
 
             # Preview generated research
-            research_path = OUTPUTS_DIR / "research_report.md"
+            research_path = OUTPUTS_DIR / "projects" / project_id / "research_report.md"
             preview = {"report_bytes": research_path.stat().st_size if research_path.exists() else 0}
             yield make_event("v01_research", "completed", "Niche & Keyword research completed and saved locally.", 28, preview, "completed")
             ACTIVE_RUNS[project_id]["phases_completed"].append("v01")
@@ -116,12 +146,33 @@ class PipelineService:
             yield make_event("v02_architecture", "structuring_urls", "Designing crawlable URL architecture & slug hierarchies...", 35)
             await asyncio.sleep(0.3)
 
-            yield make_event("v02_architecture", "internal_linking", "Building 74-node internal linking graph & anchor text topology...", 45)
+            yield make_event("v02_architecture", "internal_linking", "Building project-specific keyword groups, URLs, and internal links...", 45)
             try:
                 loop = asyncio.get_event_loop()
-                await loop.run_in_executor(None, lambda: run_architecture_phase(dry_run=dry_run))
+                def run_project_v02():
+                    run_v02_site_foundation(project_outputs_dir)
+                    run_v02_keyword_grouping(project_outputs_dir)
+                    run_v02_group_audit(
+                        str(project_outputs_dir / "v02" / "keyword_groups.json"),
+                        str(project_outputs_dir / "v02" / "keyword_group_audit.json"),
+                    )
+                    run_architecture_phase(project_outputs_dir)
+                    run_v02_url_architecture(project_outputs_dir, target_domain)
+                    run_v02_internal_linking(project_outputs_dir)
+                    run_v02_technical_seo(project_outputs_dir, target_domain)
+
+                await loop.run_in_executor(None, run_project_v02)
             except Exception as e:
-                logger.warning(f"Architecture phase exception: {e}")
+                logger.exception("Architecture phase failed for project %s", project_id)
+                ACTIVE_RUNS[project_id]["status"] = "failed"
+                yield make_event(
+                    "v02_architecture",
+                    "failed",
+                    f"Architecture phase failed: {e}",
+                    45,
+                    status="error",
+                )
+                return
 
             arch_preview = {"url_count": 10, "links_mapped": 74}
             yield make_event("v02_architecture", "completed", "Site architecture, URL routing, and link graph established.", 55, arch_preview, "completed")
@@ -146,10 +197,21 @@ class PipelineService:
                     lambda: run_content_generation_phase(
                         dry_run=dry_run,
                         max_pages=max_pages,
+                        output_dir=project_outputs_dir / "v03",
+                        pipeline_inputs_dir=project_outputs_dir,
                     )
                 )
             except Exception as e:
-                logger.warning(f"Content generation exception: {e}")
+                logger.exception("Content generation failed for project %s", project_id)
+                ACTIVE_RUNS[project_id]["status"] = "failed"
+                yield make_event(
+                    "v03_content_generation",
+                    "failed",
+                    f"Content generation failed: {e}",
+                    80,
+                    status="error",
+                )
+                return
 
             yield make_event("v03_content_generation", "validating", "Running 80-point automated SEO & quality validation suite...", 90)
             await asyncio.sleep(0.3)
@@ -161,10 +223,13 @@ class PipelineService:
             # Optional frontend export
             if export_frontend:
                 try:
-                    pages_dir = OUTPUTS_DIR / "v03" / "pages"
+                    pages_dir = project_outputs_dir / "v03" / "pages"
                     if pages_dir.exists():
                         pages = load_pages_from_directory(pages_dir)
-                        cfg = ExportConfig(non_interactive=True)
+                        cfg = ExportConfig(
+                            non_interactive=True,
+                            output_dir=DEFAULT_EXPORT_DIR / project_id,
+                        )
                         export_frontend_components(pages, cfg)
                 except Exception as e:
                     logger.warning(f"Frontend export error: {e}")
