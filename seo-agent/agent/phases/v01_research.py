@@ -1,15 +1,12 @@
 import json
-import os
-import sys
 import re
-from typing import List, Dict, Any
-from pydantic import BaseModel
+from pathlib import Path
+from typing import List, Dict, Any, Optional
 
-from core.config import validate_config, GEMINI_API_KEY
+from core.config import validate_config
 from core.llm import generate_json
 from core.db import (
-    create_project,
-    update_project,
+    update_project_record,
     create_clusters,
     save_keywords,
 )
@@ -23,13 +20,11 @@ from core.scraper import (
 )
 from prompts.v01_prompts import (
     ProjectExtraction,
-    FollowUpQuestions,
     TopicClustersResponse,
     BatchKeywordClassification,
     ContentGapAnalysisResponse,
     ClusterSeedsResponse,
     EXTRACTION_SYSTEM_PROMPT,
-    FOLLOWUP_SYSTEM_PROMPT,
     CLUSTER_GENERATION_SYSTEM_PROMPT,
     CLUSTER_SEEDS_SYSTEM_PROMPT,
     INTENT_CLASSIFICATION_SYSTEM_PROMPT,
@@ -41,133 +36,68 @@ def print_separator(char="─", length=50):
     print(char * length)
 
 
-def run_research_phase():
+def run_research_phase(
+    custom_idea: str,
+    project_id: str,
+    output_dir: Optional[Path] = None,
+    target_domain: Optional[str] = None,
+):
     print_separator("═")
     print("      SEO AUTOMATION AGENT - PHASE v0.1 RESEACH      ")
     print_separator("═")
+
+    raw_desc = custom_idea.strip()
+    if not raw_desc:
+        raise ValueError("v0.1 research requires a non-empty project idea.")
+    if not project_id.strip():
+        raise ValueError("v0.1 research requires an existing project ID.")
+
+    output_root = Path(output_dir) if output_dir else Path("outputs")
 
     # 0. Validate Configuration
     validate_config()
 
     # ============================================================
-    # --- STEPS 1 & 2 & 3: IDEA DESCRIPTION, EXTRACTION & CLARIFICATION ---
+    # --- STEPS 1 & 2: LOAD PROJECT IDEA AND EXTRACT PARAMETERS ---
     # ============================================================
-    print("\n[Step 1] Describe your website idea.")
-    print(
-        "Example: 'A blog about indoor tomato gardening for apartment dwellers in New York, monetized with affiliate links.'"
-    )
-    raw_desc = input("\nEnter your idea: ").strip()
-    while not raw_desc:
-        raw_desc = input("Idea cannot be empty. Enter your idea: ").strip()
+    print(f"\n[Step 1] Researching existing project {project_id}.")
 
-    print("\nSaving project drafts to Supabase...")
-    project = create_project(raw_desc)
-    project_id = project["id"]
-    print(f"Project created with ID: {project_id}")
-
-    # Extraction loop
-    confirmed = False
-    context_desc = raw_desc
-    extraction = None
-
-    for round_num in range(1, 4):
-        print(f"\n[Step 2] Extracting project parameters (Round {round_num})...")
-        prompt = (
-            f"Extract parameters from the following project idea:\n\n{context_desc}"
+    # The web pipeline has no interactive clarification loop. If the LLM
+    # marks the idea vague, continue with its best available extraction.
+    print("\n[Step 2] Extracting project parameters...")
+    try:
+        extraction = generate_json(
+            prompt=f"Extract parameters from the following project idea:\n\n{raw_desc}",
+            response_schema=ProjectExtraction,
+            system_instruction=EXTRACTION_SYSTEM_PROMPT,
         )
+    except Exception as e:
+        print(f"Error during LLM extraction: {e}")
+        raise RuntimeError("v0.1 could not extract project parameters.") from e
 
-        try:
-            extraction = generate_json(
-                prompt=prompt,
-                response_schema=ProjectExtraction,
-                system_instruction=EXTRACTION_SYSTEM_PROMPT,
-            )
-        except Exception as e:
-            print(f"Error during LLM extraction: {e}")
-            break
+    print("\nExtracted Parameters:")
+    print(f"  • Core Topic:      {extraction.core_topic}")
+    print(f"  • Target Audience: {extraction.target_audience}")
+    print(f"  • Site Goal:       {extraction.site_goal}")
+    print(f"  • Geo/Language:    {extraction.geo_scope}")
+    print(f"  • Constraints:     {extraction.constraints}")
+    if extraction.is_vague:
+        print("Idea is marked vague; continuing with the best available extraction for this web run.")
 
-        print("\nExtracted Parameters:")
-        print(f"  • Core Topic:      {extraction.core_topic}")
-        print(f"  • Target Audience: {extraction.target_audience}")
-        print(f"  • Site Goal:       {extraction.site_goal}")
-        print(f"  • Geo/Language:    {extraction.geo_scope}")
-        print(f"  • Constraints:     {extraction.constraints}")
-
-        if not extraction.is_vague:
-            print("\nParameters are clear and well-defined!")
-            break
-
-        print(f"\n[Vague Idea Flagged] Reason: {extraction.vagueness_reason}")
-        print("Let's clarify a few details.")
-
-        # Ask follow-up questions
-        followup_prompt = (
-            f"Generate 2-3 short, precise clarification questions based on this extraction:\n"
-            f"{extraction.model_dump_json()}"
-        )
-        try:
-            questions_obj = generate_json(
-                prompt=followup_prompt,
-                response_schema=FollowUpQuestions,
-                system_instruction=FOLLOWUP_SYSTEM_PROMPT,
-            )
-        except Exception as e:
-            print(f"Error generating follow-ups: {e}")
-            break
-
-        answers = []
-        for q in questions_obj.questions:
-            print(f"\nQuestion: {q}")
-            ans = input("Your answer: ").strip()
-            answers.append(f"Q: {q}\nA: {ans}")
-
-        # Append answers to context for next extraction pass
-        context_desc += "\n\n" + "\n".join(answers)
-
-    # Final confirmation
+    # The web pipeline accepts the extracted parameters automatically.
     print_separator()
-    print("\n[Step 3] Final Project Confirmation")
-    print(f"Core Topic:      {extraction.core_topic if extraction else 'N/A'}")
-    print(f"Target Audience: {extraction.target_audience if extraction else 'N/A'}")
-    print(f"Site Goal:       {extraction.site_goal if extraction else 'N/A'}")
-    print(f"Geo Scope:       {extraction.geo_scope if extraction else 'N/A'}")
-    print(f"Constraints:     {extraction.constraints if extraction else 'N/A'}")
+    print("\n[Step 3] Accepting extracted project parameters for the web pipeline")
 
-    confirm = input("\nDoes this look correct? (y/n/edit): ").strip().lower()
-    if confirm == "edit":
-        extraction.core_topic = (
-            input(f"Core Topic [{extraction.core_topic}]: ").strip()
-            or extraction.core_topic
-        )
-        extraction.target_audience = (
-            input(f"Target Audience [{extraction.target_audience}]: ").strip()
-            or extraction.target_audience
-        )
-        extraction.site_goal = (
-            input(f"Site Goal [{extraction.site_goal}]: ").strip()
-            or extraction.site_goal
-        )
-        extraction.geo_scope = (
-            input(f"Geo Scope [{extraction.geo_scope}]: ").strip()
-            or extraction.geo_scope
-        )
-        extraction.constraints = (
-            input(f"Constraints [{extraction.constraints}]: ").strip()
-            or extraction.constraints
-        )
-
-    # Save confirmed project details
-    update_project(
-        project_id,
-        {
-            "core_topic": extraction.core_topic,
-            "target_audience": extraction.target_audience,
-            "site_goal": extraction.site_goal,
-            "geo_scope": extraction.geo_scope,
-            "constraints": extraction.constraints,
-            "confirmed": True,
-        },
-    )
+    # Save the extracted project details
+    project_updates = {
+        "target_audience": extraction.target_audience,
+        "primary_goal": extraction.site_goal,
+        "status": "researching",
+        "current_phase": "v01_research",
+    }
+    # The selected project schema stores these project fields. Geo scope and
+    # constraints remain in the project's research artifact below.
+    update_project_record(project_id, project_updates)
     print("\nProject details updated and saved in Supabase!")
 
     # ============================================================
@@ -190,7 +120,7 @@ def run_research_phase():
         )
     except Exception as e:
         print(f"Failed to generate clusters: {e}")
-        sys.exit(1)
+        raise RuntimeError("v0.1 could not generate topic clusters.") from e
 
     print(
         f"Generated {len(clusters_resp.clusters)} clusters. Validating via Google Autocomplete..."
@@ -210,8 +140,7 @@ def run_research_phase():
         validated_clusters.append({"name": c.name, "description": desc})
 
     print_separator()
-    print("\n[Step 5] Approve and Refine Topic Clusters")
-    print("Review the clusters below. You can keep, remove, or rename each one.")
+    print("\n[Step 5] Accept generated topic clusters for this web run")
     print_separator()
 
     approved_clusters = []
@@ -219,32 +148,10 @@ def run_research_phase():
         print(f"\nCluster #{i+1}: {c['name']}")
         print(f"Description: {c['description']}")
 
-        action = input("Keep (y) / Remove (n) / Rename (type new name) [y]: ").strip()
-        if action.lower() == "n":
-            print("Removed.")
-            continue
-        elif action and action.lower() != "y":
-            print(f"Renamed to: {action}")
-            approved_clusters.append({"name": action, "description": c["description"]})
-        else:
-            approved_clusters.append(c)
-
-    while True:
-        add_more = (
-            input("\nWould you like to add a custom topic cluster? (y/n) [n]: ")
-            .strip()
-            .lower()
-        )
-        if add_more != "y":
-            break
-        custom_name = input("Enter cluster name: ").strip()
-        custom_desc = input("Enter cluster description: ").strip()
-        if custom_name:
-            approved_clusters.append({"name": custom_name, "description": custom_desc})
+        approved_clusters.append(c)
 
     if not approved_clusters:
-        print("Error: You must have at least one approved cluster to proceed.")
-        sys.exit(1)
+        raise ValueError("At least one topic cluster is required to continue v0.1.")
 
     print("\nSaving clusters to Supabase...")
     saved_clusters = create_clusters(project_id, approved_clusters)
@@ -518,25 +425,24 @@ def run_research_phase():
     print("\n[Step 9] Saving SEO research and page-planning reports...")
     print_separator()
 
-    os.makedirs("outputs", exist_ok=True)
+    output_root.mkdir(parents=True, exist_ok=True)
 
-    report_path = os.path.join("outputs", "research_report.md")
-    page_opportunities_path = os.path.join(
-        "outputs",
-        "page_opportunities.json",
-    )
+    report_path = output_root / "research_report.md"
+    page_opportunities_path = output_root / "page_opportunities.json"
 
     # ------------------------------------------------------------
     # Build machine-readable page opportunities
     # ------------------------------------------------------------
 
     page_opportunities = {
+        "project_id": project_id,
         "project": {
             "core_topic": extraction.core_topic,
             "target_audience": extraction.target_audience,
             "site_goal": extraction.site_goal,
             "geo_scope": extraction.geo_scope,
             "constraints": extraction.constraints,
+            "target_domain": target_domain or "https://example.com",
         },
         "clusters": [],
     }

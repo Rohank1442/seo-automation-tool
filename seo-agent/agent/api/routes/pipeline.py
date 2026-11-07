@@ -77,6 +77,7 @@ async def stream_pipeline_progress(
         async for event in PipelineService.run_pipeline_stream(
             project_id=project_id,
             user_idea=user_idea,
+            target_domain=project.get("target_domain") or "https://example.com",
             dry_run=dry_run,
             min_pages=min_pages,
             max_pages=max_pages,
