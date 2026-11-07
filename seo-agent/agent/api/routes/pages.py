@@ -3,6 +3,7 @@ Pages & Frontend Component API Routes.
 """
 
 import json
+import re
 from pathlib import Path
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException
@@ -16,6 +17,7 @@ from api.schemas import (
     PageSummaryResponse,
 )
 from phases.v03 import generate_additional_wave
+from core.db import ProjectStoreError, ProjectStoreUnavailable, get_project_record
 from phases.v03_export_frontend import (
     DEFAULT_EXPORT_DIR,
     ExportConfig,
@@ -29,16 +31,42 @@ from phases.v03_export_frontend import (
 router = APIRouter(prefix="/projects/{project_id}/pages", tags=["Pages & Content"])
 
 AGENT_DIR = Path(__file__).resolve().parent.parent.parent
-OUTPUTS_V03_PAGES_DIR = AGENT_DIR / "outputs" / "v03" / "pages"
+PROJECT_OUTPUTS_DIR = AGENT_DIR / "outputs" / "projects"
+
+
+def _project_pages_dir(project_id: str) -> Path:
+    """Resolve generated pages only after confirming the project exists."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", project_id):
+        raise HTTPException(status_code=400, detail="Invalid project ID.")
+
+    try:
+        project = get_project_record(project_id)
+    except ProjectStoreUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if project is None:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+
+    return PROJECT_OUTPUTS_DIR / project_id / "v03" / "pages"
+
+
+def _project_page_json_path(pages_dir: Path, slug: str) -> Path:
+    """Build a page path from a single safe slug segment."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", slug):
+        raise HTTPException(status_code=400, detail="Invalid page slug.")
+    return pages_dir / f"{slug}.json"
 
 
 @router.get("", response_model=List[PageSummaryResponse])
 def list_generated_pages(project_id: str):
     """List all generated pages for a project with health scores and metadata."""
-    if not OUTPUTS_V03_PAGES_DIR.exists():
+    pages_dir = _project_pages_dir(project_id)
+    if not pages_dir.exists():
         return []
 
-    pages = load_pages_from_directory(OUTPUTS_V03_PAGES_DIR)
+    pages = load_pages_from_directory(pages_dir)
     summaries = []
 
     for p in pages:
@@ -74,7 +102,8 @@ def list_generated_pages(project_id: str):
 @router.get("/{slug}", response_model=PageDetailResponse)
 def get_page_detail(project_id: str, slug: str):
     """Get full details of a specific page: markdown content, FAQ items, and pre-rendered Next.js JSX."""
-    json_path = OUTPUTS_V03_PAGES_DIR / f"{slug}.json"
+    pages_dir = _project_pages_dir(project_id)
+    json_path = _project_page_json_path(pages_dir, slug)
     if not json_path.exists():
         raise HTTPException(status_code=404, detail=f"Page with slug '{slug}' not found.")
 
@@ -137,11 +166,12 @@ def get_page_detail(project_id: str, slug: str):
 @router.post("/export", response_model=ExportFrontendResponse)
 def export_pages_to_frontend(project_id: str, payload: ExportFrontendRequest):
     """Compile and export all pages to drop-in Next.js or React components."""
-    if not OUTPUTS_V03_PAGES_DIR.exists():
+    pages_dir = _project_pages_dir(project_id)
+    if not pages_dir.exists():
         raise HTTPException(status_code=400, detail="No generated pages found. Run v0.3 first.")
 
-    pages = load_pages_from_directory(OUTPUTS_V03_PAGES_DIR)
-    out_dir = Path(payload.output_dir).resolve() if payload.output_dir else DEFAULT_EXPORT_DIR
+    pages = load_pages_from_directory(pages_dir)
+    out_dir = Path(payload.output_dir).resolve() if payload.output_dir else DEFAULT_EXPORT_DIR / project_id
 
     cfg = ExportConfig(
         framework=payload.framework,
@@ -173,11 +203,15 @@ def trigger_additional_wave(project_id: str, payload: GenerateWaveRequest):
       - Option B: 'specific_cluster' (Candidates for a selected topical cluster)
     """
     try:
+        pages_dir = _project_pages_dir(project_id)
+        project_outputs_dir = pages_dir.parents[1]
         result = generate_additional_wave(
             strategy_name=payload.strategy,
             batch_size=payload.batch_size,
             cluster_name=payload.cluster_name,
             dry_run=payload.dry_run,
+            output_dir=project_outputs_dir / "v03",
+            pipeline_inputs_dir=project_outputs_dir,
         )
         return GenerateWaveResponse(
             status=result["status"],
@@ -188,6 +222,8 @@ def trigger_additional_wave(project_id: str, payload: GenerateWaveRequest):
             total_project_pages=result.get("total_project_pages", 0),
             message=result.get("message", "Wave completed successfully."),
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Wave generation failed: {str(e)}")
 
