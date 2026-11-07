@@ -131,23 +131,30 @@ def update_project_record(
 
 def create_project(raw_description: str) -> Dict[str, Any]:
     """Insert a new project and return its data."""
+    project_id = str(uuid.uuid4())
+    project_data = {
+        "id": project_id,
+        "name": f"Project-{raw_description[:30].strip()}...",
+        "raw_description": raw_description,
+        "target_domain": "https://example.com",
+        "target_audience": "General search audience",
+        "primary_goal": "Rank for high-intent long-tail keywords and drive organic search traffic",
+        "status": "researching",
+        "current_phase": "v01_research",
+    }
+
     client = get_db_client()
     if client:
         try:
-            response = client.table("projects").insert({
-                "raw_description": raw_description,
-                "confirmed": False,
-            }).execute()
+            response = client.table("projects").insert(project_data).execute()
             if response.data:
                 return response.data[0]
         except Exception as e:
             logger.warning(f"Supabase create_project error: {e}. Using local storage.")
 
     # Local Fallback
-    project_id = str(uuid.uuid4())[:8]
     data = {
-        "id": project_id,
-        "raw_description": raw_description,
+        **project_data,
         "confirmed": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -176,7 +183,12 @@ def create_clusters(project_id: str, clusters: List[Dict[str, str]]) -> List[Dic
     """Insert a list of clusters for a project."""
     client = get_db_client()
     data_to_insert = [
-        {"project_id": project_id, "name": c["name"], "description": c.get("description", "")}
+        {
+            "id": str(uuid.uuid4()),
+            "project_id": project_id,
+            "name": c["name"],
+            "description": c.get("description", ""),
+        }
         for c in clusters
     ]
 

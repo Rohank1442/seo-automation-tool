@@ -122,6 +122,7 @@ def generate_additional_wave(
     cluster_name: Optional[str] = None,
     dry_run: bool = False,
     output_dir: Optional[Path] = None,
+    pipeline_inputs_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
     Executes a multi-wave page expansion batch without touching already published pages.
@@ -136,7 +137,7 @@ def generate_additional_wave(
 
     logger.info(f"Starting Multi-Wave Expansion: Strategy='{strategy_name}' | Batch={batch_size} | Cluster='{cluster_name}'")
 
-    artifacts = load_all_pipeline_inputs()
+    artifacts = load_all_pipeline_inputs(base_outputs_dir=pipeline_inputs_dir)
     candidates_manifest = build_unified_page_candidates(artifacts)
 
     existing_slugs = load_existing_page_slugs(pages_dir)
@@ -188,6 +189,7 @@ def run_content_generation_phase(
     target_slug: Optional[str] = None,
     max_pages: Optional[int] = None,
     output_dir: Optional[Path] = None,
+    pipeline_inputs_dir: Optional[Path] = None,
     candidates_only: bool = False,
     select_only: bool = False,
     briefs_only: bool = False,
@@ -204,7 +206,7 @@ def run_content_generation_phase(
     out_dir.mkdir(parents=True, exist_ok=True)
     pages_dir.mkdir(parents=True, exist_ok=True)
 
-    artifacts = load_all_pipeline_inputs()
+    artifacts = load_all_pipeline_inputs(base_outputs_dir=pipeline_inputs_dir)
 
     # 1. Validate-only mode
     if validate_only:
