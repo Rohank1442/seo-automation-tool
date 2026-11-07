@@ -31,6 +31,7 @@ Important:
 - It decides which pages the future website should contain.
 """
 
+# WORK ON THIS MODULE NOW; RESTRUCTURE IT THEN START WORKING ON THE LLM CONTENT GENERATION PART
 
 import json
 import os
