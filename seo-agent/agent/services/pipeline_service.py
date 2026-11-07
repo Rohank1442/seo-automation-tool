@@ -111,7 +111,7 @@ class PipelineService:
                 # Run research phase synchronously in worker thread if needed
                 loop = asyncio.get_event_loop()
                 # Run research with provided problem statement or dry-run fallback
-                await loop.run_in_executor(
+                research_result = await loop.run_in_executor(
                     None,
                     lambda: run_research_phase(
                         custom_idea=user_idea,
@@ -134,8 +134,18 @@ class PipelineService:
 
             # Preview generated research
             research_path = OUTPUTS_DIR / "projects" / project_id / "research_report.md"
-            preview = {"report_bytes": research_path.stat().st_size if research_path.exists() else 0}
-            yield make_event("v01_research", "completed", "Niche & Keyword research completed and saved locally.", 28, preview, "completed")
+            preview = {
+                "report_bytes": research_path.stat().st_size if research_path.exists() else 0,
+                "summary": research_result.get("summary", {}),
+            }
+            yield make_event(
+                "v01_research",
+                "completed",
+                "Niche & Keyword research completed and saved locally.",
+                28,
+                preview,
+                "completed",
+            )
             ACTIVE_RUNS[project_id]["phases_completed"].append("v01")
             await asyncio.sleep(0.3)
 

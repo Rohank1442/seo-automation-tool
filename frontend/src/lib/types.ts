@@ -13,6 +13,16 @@ export interface Project {
   health_score: number;
 }
 
+export interface ResearchSummary {
+  clusters: number;
+  keywords: number;
+  competitors: number;
+  content_gaps: number;
+  high_priority_gaps: number;
+  page_opportunities: number;
+  recommended_cluster: string | null;
+}
+
 export interface PipelineEvent {
   project_id: string;
   phase: string;
@@ -20,7 +30,11 @@ export interface PipelineEvent {
   message: string;
   progress_percentage: number;
   status: string;
-  data_preview?: Record<string, any>;
+  data_preview?: {
+    report_bytes?: number;
+    summary?: ResearchSummary;
+    [key: string]: any;
+  };
   timestamp: string;
 }
 

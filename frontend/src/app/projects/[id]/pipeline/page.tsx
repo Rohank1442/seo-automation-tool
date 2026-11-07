@@ -239,21 +239,44 @@ export default function PipelinePage() {
               Click &quot;Trigger All Phases&quot; above to launch the live autonomous pipeline stream.
             </div>
           ) : (
-            events.map((e, i) => (
-              <div key={i} className="flex items-start space-x-2 leading-relaxed">
-                <span className="text-gray-500 select-none">[{e.timestamp.slice(11, 19)}]</span>
-                <span
-                  className={`font-semibold px-1.5 py-0.2 rounded text-[10px] uppercase ${
-                    e.status === "completed"
-                      ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                      : "bg-blue-950 text-blue-400 border border-blue-800"
-                  }`}
-                >
-                  {e.phase}
-                </span>
-                <span className="text-gray-200">{e.message}</span>
-              </div>
-            ))
+            events.map((e, i) => {
+              const summary =
+                e.phase === "v01_research" && e.step === "completed"
+                  ? e.data_preview?.summary
+                  : undefined;
+
+              return (
+                <div key={i} className="space-y-2">
+                  <div className="flex items-start space-x-2 leading-relaxed">
+                    <span className="text-gray-500 select-none">[{e.timestamp.slice(11, 19)}]</span>
+                    <span
+                      className={`font-semibold px-1.5 py-0.2 rounded text-[10px] uppercase ${
+                        e.status === "completed"
+                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                          : "bg-blue-950 text-blue-400 border border-blue-800"
+                      }`}
+                    >
+                      {e.phase}
+                    </span>
+                    <span className="text-gray-200">{e.message}</span>
+                  </div>
+
+                  {summary && (
+                    <div className="ml-[7.5rem] grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 rounded-lg border border-gray-800 bg-gray-900/70 p-3 text-[11px]">
+                      <span>Clusters: <strong className="text-white">{summary.clusters}</strong></span>
+                      <span>Keywords: <strong className="text-white">{summary.keywords}</strong></span>
+                      <span>Competitors: <strong className="text-white">{summary.competitors}</strong></span>
+                      <span>Content gaps: <strong className="text-white">{summary.content_gaps}</strong></span>
+                      <span>High priority: <strong className="text-white">{summary.high_priority_gaps}</strong></span>
+                      <span>Page opportunities: <strong className="text-white">{summary.page_opportunities}</strong></span>
+                      <span className="col-span-2 sm:col-span-2">
+                        Recommended cluster: <strong className="text-blue-300">{summary.recommended_cluster ?? "None"}</strong>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       </div>
