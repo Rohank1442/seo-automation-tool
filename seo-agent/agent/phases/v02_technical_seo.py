@@ -13,6 +13,7 @@ will consume later.
 
 import json
 from pathlib import Path
+from typing import Optional
 from urllib.parse import urlparse
 
 
@@ -101,7 +102,7 @@ def validate_url_structure(url: str) -> dict:
 # PAGE SEO SPECIFICATION
 # ============================================================
 
-def build_page_seo_spec(page: dict) -> dict:
+def build_page_seo_spec(page: dict, base_url: str = BASE_URL) -> dict:
     """
     Build technical SEO requirements for a single page.
 
@@ -114,7 +115,7 @@ def build_page_seo_spec(page: dict) -> dict:
 
     url = page["url"]
 
-    full_url = BASE_URL.rstrip("/") + url
+    full_url = base_url.rstrip("/") + url
 
     validation = validate_url_structure(full_url)
 
@@ -155,7 +156,7 @@ def build_page_seo_spec(page: dict) -> dict:
 # ROBOTS.TXT
 # ============================================================
 
-def build_robots_txt() -> str:
+def build_robots_txt(base_url: str = BASE_URL) -> str:
     """
     Generate the robots.txt content for the site.
 
@@ -163,10 +164,10 @@ def build_robots_txt() -> str:
     intended to be crawlable.
     """
 
-    return """User-agent: *
+    return f"""User-agent: *
 Allow: /
 
-Sitemap: https://example.com/sitemap.xml
+Sitemap: {base_url.rstrip('/')}/sitemap.xml
 """
 
 
@@ -174,7 +175,7 @@ Sitemap: https://example.com/sitemap.xml
 # SITEMAP SPECIFICATION
 # ============================================================
 
-def build_sitemap_spec(pages: list) -> dict:
+def build_sitemap_spec(pages: list, base_url: str = BASE_URL) -> dict:
     """
     Build a sitemap specification from indexable pages.
 
@@ -195,7 +196,7 @@ def build_sitemap_spec(pages: list) -> dict:
 
         urls.append({
             "page_id": page["page_id"],
-            "url": BASE_URL.rstrip("/") + url,
+            "url": base_url.rstrip("/") + url,
             "changefreq": "monthly",
             "priority": (
                 1.0
@@ -274,14 +275,14 @@ def build_internal_linking_checks(
 # GLOBAL TECHNICAL SEO RULES
 # ============================================================
 
-def build_global_rules() -> dict:
+def build_global_rules(base_url: str = BASE_URL) -> dict:
     """
     Define technical SEO rules that apply to the entire site.
     """
 
     return {
         "protocol": "https",
-        "canonical_domain": BASE_URL,
+        "canonical_domain": base_url.rstrip("/"),
 
         "crawlability": {
             "robots_txt_required": True,
@@ -407,7 +408,7 @@ def validate_technical_seo(
 # MAIN
 # ============================================================
 
-def main() -> None:
+def main(outputs_root: Optional[Path] = None, base_url: Optional[str] = None) -> dict:
     """
     Execute the complete technical SEO architecture pipeline.
     """
@@ -420,10 +421,18 @@ def main() -> None:
     # STEP 1
     # --------------------------------------------------------
 
+    root = Path(outputs_root) if outputs_root else Path("outputs")
+    output_dir = root / "v02"
+    url_architecture_file = output_dir / "url_architecture.json"
+    site_architecture_file = output_dir / "site_architecture.json"
+    internal_linking_file = output_dir / "internal_linking.json"
+    output_file = output_dir / "technical_seo.json"
+    base_url = (base_url or BASE_URL).rstrip("/")
+
     print("\n[Step 1] Loading URL architecture...")
 
     url_architecture = load_json(
-        URL_ARCHITECTURE_FILE
+        url_architecture_file
     )
 
     pages = url_architecture.get("urls", [])
@@ -439,7 +448,7 @@ def main() -> None:
     print("\n[Step 2] Loading site architecture...")
 
     site_architecture = load_json(
-        SITE_ARCHITECTURE_FILE
+        site_architecture_file
     )
 
     print("  ✓ Site architecture loaded")
@@ -451,7 +460,7 @@ def main() -> None:
     print("\n[Step 3] Loading internal linking architecture...")
 
     internal_linking = load_json(
-        INTERNAL_LINKING_FILE
+        internal_linking_file
     )
 
     print("  ✓ Internal linking architecture loaded")
@@ -463,7 +472,7 @@ def main() -> None:
     print("\n[Step 4] Building page SEO specifications...")
 
     page_specs = [
-        build_page_seo_spec(page)
+        build_page_seo_spec(page, base_url)
         for page in pages
     ]
 
@@ -478,7 +487,7 @@ def main() -> None:
 
     print("\n[Step 5] Building robots.txt specification...")
 
-    robots_txt = build_robots_txt()
+    robots_txt = build_robots_txt(base_url)
 
     print("  ✓ robots.txt generated")
 
@@ -488,7 +497,7 @@ def main() -> None:
 
     print("\n[Step 6] Building sitemap specification...")
 
-    sitemap = build_sitemap_spec(pages)
+    sitemap = build_sitemap_spec(pages, base_url)
 
     print(
         f"  ✓ Sitemap contains "
@@ -521,7 +530,7 @@ def main() -> None:
 
     print("\n[Step 8] Building global technical SEO rules...")
 
-    global_rules = build_global_rules()
+    global_rules = build_global_rules(base_url)
 
     print("  ✓ Global SEO rules generated")
 
@@ -563,7 +572,7 @@ def main() -> None:
             "brand_new",
         ),
 
-        "base_url": BASE_URL,
+        "base_url": base_url,
 
         "summary": {
             "total_pages": len(pages),
@@ -604,13 +613,13 @@ def main() -> None:
 
         "source_files": {
             "url_architecture": str(
-                URL_ARCHITECTURE_FILE
+                url_architecture_file
             ),
             "site_architecture": str(
-                SITE_ARCHITECTURE_FILE
+                site_architecture_file
             ),
             "internal_linking": str(
-                INTERNAL_LINKING_FILE
+                internal_linking_file
             ),
         },
     }
@@ -621,18 +630,20 @@ def main() -> None:
 
     save_json(
         result,
-        OUTPUT_FILE,
+        output_file,
     )
 
     print("\n[Step 11] Saving technical SEO plan...")
 
     print(
-        f"  ✓ Saved: {OUTPUT_FILE}"
+        f"  ✓ Saved: {output_file}"
     )
 
     print("\n" + "=" * 60)
     print("        TECHNICAL SEO COMPLETE")
     print("=" * 60)
+
+    return result
 
 
 if __name__ == "__main__":

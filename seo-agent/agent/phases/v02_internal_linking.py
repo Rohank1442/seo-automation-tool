@@ -22,7 +22,7 @@ Design principles:
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 
 # ---------------------------------------------------------------------
@@ -810,7 +810,7 @@ def build_summary(
 # MAIN PIPELINE
 # ---------------------------------------------------------------------
 
-def main() -> None:
+def main(outputs_root: Optional[Path] = None) -> Dict[str, Any]:
     """
     Execute the complete v0.2 internal-linking pipeline.
 
@@ -837,9 +837,12 @@ def main() -> None:
 
     print("\n[Step 1] Loading URL architecture...")
 
-    url_architecture = load_json(
-        URL_ARCHITECTURE_FILE
-    )
+    v02_dir = (Path(outputs_root) if outputs_root else Path("outputs")) / "v02"
+    url_architecture_file = v02_dir / "url_architecture.json"
+    site_architecture_file = v02_dir / "site_architecture.json"
+    output_file = v02_dir / "internal_linking.json"
+
+    url_architecture = load_json(url_architecture_file)
 
     print("  ✓ URL architecture loaded")
 
@@ -849,9 +852,7 @@ def main() -> None:
 
     print("\n[Step 2] Loading site architecture...")
 
-    site_architecture = load_json(
-        SITE_ARCHITECTURE_FILE
-    )
+    site_architecture = load_json(site_architecture_file)
 
     print("  ✓ Site architecture loaded")
 
@@ -961,11 +962,11 @@ def main() -> None:
         "links": links,
         "source_files": {
             "url_architecture": str(
-                URL_ARCHITECTURE_FILE
+            url_architecture_file
                 .relative_to(BASE_DIR)
             ),
             "site_architecture": str(
-                SITE_ARCHITECTURE_FILE
+            site_architecture_file
                 .relative_to(BASE_DIR)
             ),
         },
@@ -973,18 +974,17 @@ def main() -> None:
 
     print("\n[Step 9] Saving internal-linking plan...")
 
-    save_json(
-        output,
-        OUTPUT_FILE
-    )
+    save_json(output, output_file)
 
     print(
-        f"  ✓ Saved: {OUTPUT_FILE}"
+        f"  ✓ Saved: {output_file}"
     )
 
     print("\n" + "=" * 60)
     print("        INTERNAL LINKING COMPLETE")
     print("=" * 60)
+
+    return output
 
 
 if __name__ == "__main__":

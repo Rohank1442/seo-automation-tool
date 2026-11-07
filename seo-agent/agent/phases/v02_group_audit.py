@@ -401,7 +401,7 @@ def run_audit(
 # ============================================================
 
 
-def main() -> None:
+def main(input_path: str = INPUT_PATH, output_path: str = OUTPUT_PATH) -> Dict[str, Any]:
     """
     Execute the complete keyword group audit pipeline.
     """
@@ -414,9 +414,7 @@ def main() -> None:
         "\n[Step 1] Loading keyword groups..."
     )
 
-    data = load_json(
-        INPUT_PATH
-    )
+    data = load_json(input_path)
 
     print(
         "  ✓ Keyword groups loaded"
@@ -458,18 +456,17 @@ def main() -> None:
         "\n[Step 4] Saving audit..."
     )
 
-    save_json(
-        OUTPUT_PATH,
-        result,
-    )
+    save_json(output_path, result)
 
     print(
-        f"  ✓ Saved: {OUTPUT_PATH}"
+        f"  ✓ Saved: {output_path}"
     )
 
     print("\n" + "=" * 60)
     print("        GROUP AUDIT COMPLETE")
     print("=" * 60)
+
+    return result
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ structure that the future website will use.
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 
@@ -675,6 +675,8 @@ def validate_url_architecture(
 
 def build_url_architecture(
     architecture: Dict[str, Any],
+    base_url: str = "https://example.com",
+    architecture_path: Path = ARCHITECTURE_PATH,
 ) -> Dict[str, Any]:
     """
     Build the complete URL architecture from the final site
@@ -708,11 +710,11 @@ def build_url_architecture(
             "brand_new",
         ),
         "url_strategy": strategy,
-        "base_url": "https://example.com",
+        "base_url": base_url.rstrip("/"),
         "summary": summary,
         "urls": records,
         "source_file": str(
-            ARCHITECTURE_PATH.relative_to(
+            architecture_path.relative_to(
                 BASE_DIR
             )
         ),
@@ -724,7 +726,10 @@ def build_url_architecture(
 # ============================================================
 
 
-def run_v02_url_architecture() -> Dict[str, Any]:
+def run_v02_url_architecture(
+    outputs_root: Optional[Path] = None,
+    base_url: str = "https://example.com",
+) -> Dict[str, Any]:
     """
     Execute the complete URL architecture stage.
 
@@ -768,9 +773,10 @@ def run_v02_url_architecture() -> Dict[str, Any]:
         "\n[Step 1] Loading final site architecture..."
     )
 
-    architecture = load_json_file(
-        ARCHITECTURE_PATH
-    )
+    root = Path(outputs_root) if outputs_root else Path("outputs")
+    architecture_path = root / "v02" / "site_architecture.json"
+    url_architecture_path = root / "v02" / "url_architecture.json"
+    architecture = load_json_file(architecture_path)
 
     print(
         "  ✓ Architecture loaded"
@@ -785,7 +791,9 @@ def run_v02_url_architecture() -> Dict[str, Any]:
     )
 
     url_architecture = build_url_architecture(
-        architecture
+        architecture,
+        base_url=base_url,
+        architecture_path=architecture_path,
     )
 
     print(
@@ -829,14 +837,11 @@ def run_v02_url_architecture() -> Dict[str, Any]:
         "\n[Step 4] Saving URL architecture..."
     )
 
-    save_json_file(
-        URL_ARCHITECTURE_PATH,
-        url_architecture,
-    )
+    save_json_file(url_architecture_path, url_architecture)
 
     print(
         f"  ✓ Saved: "
-        f"{URL_ARCHITECTURE_PATH}"
+        f"{url_architecture_path}"
     )
 
     # --------------------------------------------------------

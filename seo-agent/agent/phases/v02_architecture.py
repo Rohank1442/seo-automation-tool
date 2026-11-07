@@ -35,6 +35,7 @@ Important:
 import json
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
@@ -315,43 +316,43 @@ def normalize_keyword(
 # ============================================================
 
 
-def load_v01_research() -> Dict[str, Any]:
+def load_v01_research(path: str = V01_OUTPUT_PATH) -> Dict[str, Any]:
     """
     Load the keyword/page opportunity research produced by v0.1.
     """
 
     return load_json_file(
-        V01_OUTPUT_PATH
+        path
     )
 
 
-def load_site_profile() -> Dict[str, Any]:
+def load_site_profile(path: str = SITE_PROFILE_PATH) -> Dict[str, Any]:
     """
     Load the SiteProfile produced during the v0.2 foundation stage.
     """
 
     return load_json_file(
-        SITE_PROFILE_PATH
+        path
     )
 
 
-def load_keyword_groups() -> Dict[str, Any]:
+def load_keyword_groups(path: str = KEYWORD_GROUPS_PATH) -> Dict[str, Any]:
     """
     Load the semantic keyword groups produced by v0.2 grouping.
     """
 
     return load_json_file(
-        KEYWORD_GROUPS_PATH
+        path
     )
 
 
-def load_group_audit() -> Dict[str, Any]:
+def load_group_audit(path: str = GROUP_AUDIT_PATH) -> Dict[str, Any]:
     """
     Load the keyword group audit produced by the audit stage.
     """
 
     return load_json_file(
-        GROUP_AUDIT_PATH
+        path
     )
 
 
@@ -1045,6 +1046,7 @@ def build_site_architecture(
     site_profile: Dict[str, Any],
     keyword_groups: Dict[str, Any],
     audit_data: Dict[str, Any],
+    source_files: Dict[str, str] = None,
 ) -> Dict[str, Any]:
     """
     Build the final SEO architecture using the outputs of the
@@ -1129,7 +1131,7 @@ def build_site_architecture(
         "clusters": cluster_architectures,
         "pages": all_pages,
         "page_count": len(all_pages),
-        "source_files": {
+        "source_files": source_files or {
             "research": V01_OUTPUT_PATH,
             "keyword_groups": KEYWORD_GROUPS_PATH,
             "group_audit": GROUP_AUDIT_PATH,
@@ -1307,7 +1309,7 @@ def validate_keyword_coverage(
 # ============================================================
 
 
-def run_v02_architecture() -> Dict[str, Any]:
+def run_v02_architecture(outputs_root: Path = None) -> Dict[str, Any]:
     """
     Execute the complete final architecture stage.
 
@@ -1349,7 +1351,14 @@ def run_v02_architecture() -> Dict[str, Any]:
         "\n[Step 1] Loading v0.1 research..."
     )
 
-    research = load_v01_research()
+    root = Path(outputs_root) if outputs_root else Path("outputs")
+    v02_dir = root / "v02"
+    research_path = str(root / "page_opportunities.json")
+    profile_path = str(v02_dir / "site_profile.json")
+    groups_path = str(v02_dir / "keyword_groups.json")
+    audit_path = str(v02_dir / "keyword_group_audit.json")
+    architecture_path = str(v02_dir / "site_architecture.json")
+    research = load_v01_research(research_path)
 
     print(
         "  ✓ Research loaded"
@@ -1359,7 +1368,7 @@ def run_v02_architecture() -> Dict[str, Any]:
         "\n[Step 2] Loading SiteProfile..."
     )
 
-    site_profile = load_site_profile()
+    site_profile = load_site_profile(profile_path)
 
     print(
         f"  ✓ Site model: "
@@ -1370,7 +1379,7 @@ def run_v02_architecture() -> Dict[str, Any]:
         "\n[Step 3] Loading semantic keyword groups..."
     )
 
-    keyword_groups = load_keyword_groups()
+    keyword_groups = load_keyword_groups(groups_path)
 
     total_groups = sum(
         len(
@@ -1393,7 +1402,7 @@ def run_v02_architecture() -> Dict[str, Any]:
         "\n[Step 4] Loading group audit..."
     )
 
-    audit_data = load_group_audit()
+    audit_data = load_group_audit(audit_path)
 
     audit_counts = {
         "approved": 0,
@@ -1439,6 +1448,11 @@ def run_v02_architecture() -> Dict[str, Any]:
         site_profile,
         keyword_groups,
         audit_data,
+        source_files={
+            "research": research_path,
+            "keyword_groups": groups_path,
+            "group_audit": audit_path,
+        },
     )
 
     print(
@@ -1467,13 +1481,10 @@ def run_v02_architecture() -> Dict[str, Any]:
         "\n[Step 7] Saving architecture..."
     )
 
-    save_json_file(
-        ARCHITECTURE_PATH,
-        architecture,
-    )
+    save_json_file(architecture_path, architecture)
 
     print(
-        f"  ✓ Saved: {ARCHITECTURE_PATH}"
+        f"  ✓ Saved: {architecture_path}"
     )
 
     print(
