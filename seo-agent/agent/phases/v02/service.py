@@ -9,7 +9,7 @@ from .internal_linking_stage import main as run_internal_linking
 from .keyword_grouping_stage import run_v02_keyword_grouping
 from .site_foundation_stage import run_v02_site_foundation
 from .technical_seo_stage import main as run_technical_seo
-from .url_architecture import run_v02_url_architecture
+from .url_architecture_stage import run_v02_url_architecture
 from .frontend_scaffold import run_frontend_scaffold
 
 
