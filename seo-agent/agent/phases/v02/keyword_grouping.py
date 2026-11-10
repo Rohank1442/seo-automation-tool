@@ -2,7 +2,7 @@
 v0.2 — Semantic Keyword Grouping.
 
 This module takes the initial keyword-level architecture produced
-by v02_architecture.py and asks Gemini to consolidate keywords
+by the site architecture stage and asks Gemini to consolidate keywords
 that share the same search intent.
 
 The result is a page-level keyword map that will eventually drive

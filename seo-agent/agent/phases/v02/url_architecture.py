@@ -26,7 +26,7 @@ from urllib.parse import urlparse
 # PATH CONFIGURATION
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 ARCHITECTURE_PATH = (
     BASE_DIR

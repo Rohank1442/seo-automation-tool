@@ -29,7 +29,7 @@ from typing import Dict, List, Any, Optional
 # PATH CONFIGURATION
 # ---------------------------------------------------------------------
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 V02_OUTPUT_DIR = BASE_DIR / "outputs" / "v02"
 

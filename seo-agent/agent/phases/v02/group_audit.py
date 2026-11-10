@@ -1,8 +1,8 @@
 """
 v0.2 — Keyword Group Audit.
 
-This phase audits the semantic keyword groups produced by
-v02_keyword_grouping.py.
+This phase audits the semantic keyword groups produced by the
+keyword-grouping stage.
 
 Pipeline:
 

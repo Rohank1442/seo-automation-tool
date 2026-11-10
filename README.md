@@ -109,9 +109,11 @@ seo-automation/
 │       │   ├── config.py               # Settings & API keys
 │       │   └── llm.py                  # Gemini JSON/text LLM abstraction
 │       ├── phases/                     # Pipeline execution modules
-│       │   ├── v01_research.py         # v0.1 Niche & Keyword Research
-│       │   ├── v02_architecture.py     # v0.2 Site Architecture & Setup
-│       │   ├── v03_content_generation.py # v0.3 Content Generation & Validation
+│       │   ├── v01/                    # v0.1 research stages and orchestrator
+│       │   ├── v02/                    # v0.2 site foundation and architecture stages
+│       │   ├── v03/                    # v0.3 content generation stages
+│       │   ├── v01_research.py         # v0.1 compatibility entry point
+│       │   ├── v03_content_generation.py # v0.3 compatibility entry point
 │       │   └── v03_export_frontend.py  # Interactive Next.js / React Frontend Exporter
 │       ├── prompts/                    # Pydantic schemas & prompt templates
 │       │   ├── v01_prompts.py          # v0.1 research schemas

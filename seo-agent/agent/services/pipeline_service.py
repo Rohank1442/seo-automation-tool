@@ -14,13 +14,7 @@ from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from phases.v01_research import run_research_phase
-from phases.v02_architecture import run_v02_architecture as run_architecture_phase
-from phases.v02_group_audit import main as run_v02_group_audit
-from phases.v02_internal_linking import main as run_v02_internal_linking
-from phases.v02_keyword_grouping import run_v02_keyword_grouping
-from phases.v02_site_foundation import run_v02_site_foundation
-from phases.v02_technical_seo import main as run_v02_technical_seo
-from phases.v02_url_architecture import run_v02_url_architecture
+from phases.v02.service import run_v02_pipeline
 from phases.v03_content_generation import run_content_generation_phase
 from phases.v03_export_frontend import (
     DEFAULT_EXPORT_DIR,
@@ -159,19 +153,10 @@ class PipelineService:
             yield make_event("v02_architecture", "internal_linking", "Building project-specific keyword groups, URLs, and internal links...", 45)
             try:
                 loop = asyncio.get_event_loop()
-                def run_project_v02():
-                    run_v02_site_foundation(project_outputs_dir)
-                    run_v02_keyword_grouping(project_outputs_dir)
-                    run_v02_group_audit(
-                        str(project_outputs_dir / "v02" / "keyword_groups.json"),
-                        str(project_outputs_dir / "v02" / "keyword_group_audit.json"),
-                    )
-                    run_architecture_phase(project_outputs_dir)
-                    run_v02_url_architecture(project_outputs_dir, target_domain)
-                    run_v02_internal_linking(project_outputs_dir)
-                    run_v02_technical_seo(project_outputs_dir, target_domain)
-
-                await loop.run_in_executor(None, run_project_v02)
+                await loop.run_in_executor(
+                    None,
+                    lambda: run_v02_pipeline(project_outputs_dir, target_domain),
+                )
             except Exception as e:
                 logger.exception("Architecture phase failed for project %s", project_id)
                 ACTIVE_RUNS[project_id]["status"] = "failed"

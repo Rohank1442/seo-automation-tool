@@ -22,7 +22,7 @@ from html import escape
 # PATHS
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 OUTPUT_DIR = BASE_DIR / "outputs" / "v02"
 FRONTEND_DIR = OUTPUT_DIR / "frontend"
 
