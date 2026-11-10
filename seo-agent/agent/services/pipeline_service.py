@@ -153,7 +153,7 @@ class PipelineService:
             yield make_event("v02_architecture", "internal_linking", "Building project-specific keyword groups, URLs, and internal links...", 45)
             try:
                 loop = asyncio.get_event_loop()
-                await loop.run_in_executor(
+                v02_result = await loop.run_in_executor(
                     None,
                     lambda: run_v02_pipeline(project_outputs_dir, target_domain),
                 )
@@ -169,7 +169,7 @@ class PipelineService:
                 )
                 return
 
-            arch_preview = {"url_count": 10, "links_mapped": 74}
+            arch_preview = v02_result.get("summary", {})
             yield make_event("v02_architecture", "completed", "Site architecture, URL routing, and link graph established.", 55, arch_preview, "completed")
             ACTIVE_RUNS[project_id]["phases_completed"].append("v02")
             await asyncio.sleep(0.3)
