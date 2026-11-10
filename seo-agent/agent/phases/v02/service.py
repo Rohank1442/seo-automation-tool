@@ -4,12 +4,13 @@ from pathlib import Path
 from typing import Optional
 
 from .architecture import run_v02_architecture
-from .group_audit import main as run_group_audit
+from .group_auditing import main as run_group_audit
 from .internal_linking import main as run_internal_linking
 from .keyword_grouping import run_v02_keyword_grouping
 from .site_foundation import run_v02_site_foundation
 from .technical_seo import main as run_technical_seo
 from .url_architecture import run_v02_url_architecture
+from .frontend_scaffold import run_frontend_scaffold
 
 
 def run_v02_pipeline(
@@ -31,3 +32,4 @@ def run_v02_pipeline(
     run_v02_url_architecture(project_outputs, target_domain or "https://example.com")
     run_internal_linking(project_outputs)
     run_technical_seo(project_outputs, target_domain)
+    run_frontend_scaffold(project_outputs, target_domain)
