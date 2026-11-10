@@ -7,7 +7,7 @@ from .architecture import run_v02_architecture
 from .group_auditing import main as run_group_audit
 from .internal_linking_stage import main as run_internal_linking
 from .keyword_grouping_stage import run_v02_keyword_grouping
-from .site_foundation import run_v02_site_foundation
+from .site_foundation_stage import run_v02_site_foundation
 from .technical_seo import main as run_technical_seo
 from .url_architecture import run_v02_url_architecture
 from .frontend_scaffold import run_frontend_scaffold
