@@ -138,7 +138,6 @@ def create_project(raw_description: str) -> Dict[str, Any]:
         "raw_description": raw_description,
         "target_domain": "https://example.com",
         "target_audience": "General search audience",
-        "primary_goal": "Rank for high-intent long-tail keywords and drive organic search traffic",
         "status": "researching",
         "current_phase": "v01_research",
     }

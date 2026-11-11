@@ -17,11 +17,10 @@ from pydantic import BaseModel, Field
 # ============================================================
 
 class ProjectCreateRequest(BaseModel):
-    name: Optional[str] = Field(None, description="Human-readable project name (auto-generated if omitted)")
+    name: str = Field(..., min_length=1, description="Human-readable project name")
     raw_description: str = Field(..., description="User's initial website idea, niche, or problem statement")
     target_audience: Optional[str] = Field(None, description="Target customer persona / audience")
     target_domain: Optional[str] = Field("https://example.com", description="Target domain for canonical URLs")
-    primary_goal: Optional[str] = Field("Rank for high-intent long-tail keywords and drive organic search traffic", description="Core SEO objective")
 
 
 class ProjectUpdateRequest(BaseModel):
@@ -41,10 +40,7 @@ class ProjectResponse(BaseModel):
     current_phase: Optional[str] = None
     created_at: str
     updated_at: Optional[str] = None
-    clusters_count: int = 0
-    keywords_count: int = 0
     pages_count: int = 0
-    health_score: float = 100.0
 
 
 # ============================================================

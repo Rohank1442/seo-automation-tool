@@ -7,13 +7,11 @@ CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     raw_description TEXT NOT NULL,
-    target_domain TEXT DEFAULT 'https://example.com',
+    target_domain TEXT NOT NULL DEFAULT 'https://example.com',
     target_audience TEXT,
-    primary_goal TEXT,
-    status TEXT DEFAULT 'created',
-    current_phase TEXT DEFAULT 'init',
-    health_score NUMERIC DEFAULT 100.0,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
+    status TEXT NOT NULL DEFAULT 'created',
+    current_phase TEXT NOT NULL DEFAULT 'init',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

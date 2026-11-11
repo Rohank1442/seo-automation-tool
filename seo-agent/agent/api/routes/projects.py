@@ -34,8 +34,10 @@ def _project_or_404(project_id: str) -> dict:
 @router.post("", response_model=ProjectResponse)
 def create_project(payload: ProjectCreateRequest):
     """Create a new SEO automation project from user's website idea / problem statement."""
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Project name cannot be blank.")
     project_id = str(uuid.uuid4())
-    name = payload.name or f"Project-{payload.raw_description[:30].strip()}..."
 
     project_data = {
         "id": project_id,
@@ -43,7 +45,6 @@ def create_project(payload: ProjectCreateRequest):
         "raw_description": payload.raw_description,
         "target_domain": payload.target_domain or "https://example.com",
         "target_audience": payload.target_audience or "General search audience",
-        "primary_goal": payload.primary_goal,
         "status": "created",
         "current_phase": "init",
     }

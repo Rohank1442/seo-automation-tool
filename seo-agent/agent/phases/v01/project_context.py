@@ -28,12 +28,11 @@ def extract_project_context(custom_idea: str, project_id: str) -> ProjectExtract
     if extraction.is_vague:
         print("Idea is marked vague; continuing with the best available extraction for this web run.")
 
-    # Persist only columns supported by the selected projects schema; the full context goes into the artifact.
+    # Keep project-level state in the project row; detailed research context is saved in the v0.1 artifact.
     update_project_record(
         project_id,
         {
             "target_audience": extraction.target_audience,
-            "primary_goal": extraction.site_goal,
             "status": "researching",
             "current_phase": "v01_research",
         },
