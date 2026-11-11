@@ -7,10 +7,6 @@ export interface Project {
   status: string;
   current_phase?: string;
   created_at: string;
-  clusters_count: number;
-  keywords_count: number;
-  pages_count: number;
-  health_score: number;
 }
 
 export interface ResearchSummary {

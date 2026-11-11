@@ -38,6 +38,10 @@ export default function HomePage() {
 
   async function handleCreateProject(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.name.trim()) {
+      setError("Please enter a project name.");
+      return;
+    }
     if (!form.raw_description.trim()) {
       setError("Please describe your website idea or problem statement.");
       return;
@@ -73,6 +77,19 @@ export default function HomePage() {
           </p>
 
           <form onSubmit={handleCreateProject} className="mt-8 space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Website / Project Name *
+              </label>
+              <input
+                required
+                type="text"
+                placeholder="e.g. Urban Mushroom Gardening"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+              />
+            </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 What is your website idea or problem statement? *
@@ -161,7 +178,6 @@ export default function HomePage() {
 
               <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500">
                 <span>{proj.pages_count} Pages</span>
-                <span>{proj.health_score}/100 Health</span>
                 <Link
                   href={`/projects/${proj.id}/pages`}
                   className="font-semibold text-blue-600 hover:text-blue-700 flex items-center space-x-1"

@@ -34,7 +34,7 @@ export const api = {
 
   async createProject(data: {
     raw_description: string;
-    name?: string;
+    name: string;
     target_audience?: string;
     target_domain?: string;
   }): Promise<Project> {
