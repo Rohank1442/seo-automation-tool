@@ -4,7 +4,7 @@
 
 -- 1. Projects Table
 CREATE TABLE IF NOT EXISTS projects (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     raw_description TEXT NOT NULL,
     target_domain TEXT NOT NULL DEFAULT 'https://example.com',
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS projects (
 -- 2. Project Clarifications / Interactive Interview Table (v0.1 Pre-run confirmation)
 CREATE TABLE IF NOT EXISTS project_clarifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     agent_understanding TEXT NOT NULL,
     suggested_focus_areas TEXT[] DEFAULT ARRAY[]::TEXT[],
     clarification_questions JSONB DEFAULT '[]'::jsonb,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS project_clarifications (
 -- 3. Pipeline Runs Table (Async execution & SSE logs persistence)
 CREATE TABLE IF NOT EXISTS pipeline_runs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     phases_queued TEXT[] DEFAULT ARRAY['v0.1', 'v0.2', 'v0.3']::TEXT[],
     dry_run BOOLEAN DEFAULT FALSE,
     status TEXT DEFAULT 'running', -- 'running', 'completed', 'failed', 'cancelled'
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
 
 -- 4. Topic Clusters Table (v0.1 Research)
 CREATE TABLE IF NOT EXISTS clusters (
-    id TEXT PRIMARY KEY,
-    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
     tier TEXT DEFAULT 'tier_1',
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS clusters (
 -- 5. Keywords Table (v0.1 Research)
 CREATE TABLE IF NOT EXISTS keywords (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    cluster_id TEXT REFERENCES clusters(id) ON DELETE CASCADE,
+    cluster_id UUID REFERENCES clusters(id) ON DELETE CASCADE,
     keyword TEXT NOT NULL,
     volume INT,
     difficulty INT,
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS keywords (
 -- 6. Site Architecture & Technical Foundation Table (v0.2 Site Setup)
 CREATE TABLE IF NOT EXISTS site_architectures (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     domain_structure TEXT DEFAULT 'subfolder', -- 'subfolder', 'subdomain', 'root'
     sitemap_xml TEXT,
     robots_txt TEXT,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS site_architectures (
 -- 7. Generated Pages Table (v0.3 Content Generation)
 CREATE TABLE IF NOT EXISTS generated_pages (
     id TEXT PRIMARY KEY,
-    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     slug TEXT NOT NULL,
     url_path TEXT NOT NULL,
     title TEXT NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS generated_pages (
 CREATE TABLE IF NOT EXISTS page_indexing_metrics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     page_id TEXT REFERENCES generated_pages(id) ON DELETE CASCADE,
-    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     check_date DATE NOT NULL DEFAULT CURRENT_DATE,
     is_indexed BOOLEAN DEFAULT FALSE,
     index_verdict TEXT DEFAULT 'DISCOVERED_NOT_INDEXED',
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS page_indexing_metrics (
 -- 9. Monitoring Alerts Table (v0.4 Signal & Anomaly Flags)
 CREATE TABLE IF NOT EXISTS monitoring_alerts (
     id TEXT PRIMARY KEY,
-    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     page_slug TEXT,
     severity TEXT DEFAULT 'info', -- 'info', 'warning', 'critical'
     alert_type TEXT NOT NULL,
