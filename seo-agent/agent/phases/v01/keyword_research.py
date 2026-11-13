@@ -1,6 +1,7 @@
 """Keyword discovery, metric collection, intent classification, and persistence for v0.1."""
 
 import json
+import re
 from typing import Any, Dict, List
 
 from core.db import save_keywords
