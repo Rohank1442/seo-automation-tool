@@ -151,6 +151,14 @@ class GenerateBriefStep(PipelineStep):
                 system_instruction=STRUCTURED_CONTENT_BRIEF_SYSTEM_PROMPT,
             )
             result.brief = brief_resp.model_dump()
+            result.brief.update({
+                "page_id": context.page_id,
+                "slug": context.slug,
+                "url": context.url,
+                "canonical_url": context.canonical_url,
+                "page_type": context.page_type,
+                "cluster": context.cluster,
+            })
         except Exception as e:
             logger.warning(f"Gemini brief call failed ({e}). Using structured fallback.")
             return self.execute(result, context, dry_run=True)
@@ -517,6 +525,7 @@ def generate_all_content_briefs(
         "version": "0.3",
         "phase": "content_brief_generation",
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "candidate_ids": [page.candidate_id for page in selected_manifest.selected_pages],
         "summary": summary,
         "briefs": briefs_list,
     }

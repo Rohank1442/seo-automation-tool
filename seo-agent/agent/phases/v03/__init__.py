@@ -83,6 +83,61 @@ def load_existing_page_slugs(pages_dir: Path) -> Set[str]:
     return {f.stem for f in pages_dir.glob("*.json")}
 
 
+def _load_reusable_content_briefs(
+    briefs_file: Path,
+    selected_manifest: FirstWaveSelectionManifest,
+    candidate_map: Dict[str, NormalizedPageCandidate],
+) -> Optional[Dict[str, Any]]:
+    """Load saved briefs only when they can be matched safely to this selection."""
+    if not briefs_file.is_file():
+        return None
+
+    try:
+        with open(briefs_file, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    briefs = manifest.get("briefs")
+    selected_pages = selected_manifest.selected_pages
+    if not isinstance(briefs, list) or len(briefs) != len(selected_pages):
+        return None
+
+    saved_candidate_ids = manifest.get("candidate_ids")
+    expected_candidate_ids = [page.candidate_id for page in selected_pages]
+    if saved_candidate_ids is not None and saved_candidate_ids != expected_candidate_ids:
+        return None
+
+    for selected_page, brief in zip(selected_pages, briefs):
+        candidate = candidate_map.get(selected_page.candidate_id)
+        if candidate is None or not isinstance(brief, dict):
+            return None
+
+        expected_keyword = (candidate.keywords.primary_keyword or "").strip().casefold()
+        saved_keyword = str(brief.get("primary_keyword") or "").strip().casefold()
+        if expected_keyword and saved_keyword != expected_keyword:
+            return None
+        if not expected_keyword and saved_keyword not in {"", "topical overview"}:
+            return None
+        if brief.get("page_id") and brief["page_id"] != candidate.candidate_id:
+            return None
+
+    for selected_page, brief in zip(selected_pages, briefs):
+        candidate = candidate_map[selected_page.candidate_id]
+        context = PageContext(candidate=candidate)
+        brief.update({
+            "page_id": context.page_id,
+            "slug": context.slug,
+            "url": context.url,
+            "canonical_url": context.canonical_url,
+            "page_type": context.page_type,
+            "cluster": context.cluster,
+        })
+
+    manifest["candidate_ids"] = expected_candidate_ids
+    return manifest
+
+
 def save_page_artifacts(result: GeneratedPageResult, pages_dir: Path):
     """Save markdown and JSON file for a generated page."""
     pages_dir.mkdir(parents=True, exist_ok=True)
@@ -260,13 +315,26 @@ def run_content_generation_phase(
             "total_selected": len(selection_manifest.selected_pages),
         }
 
+    candidate_map = {c.candidate_id: c for c in candidates_manifest.candidates}
+
     # 4. Generate Structured Content Briefs
-    briefs_manifest, briefs_file = generate_all_content_briefs(
-        selected_manifest=selection_manifest,
-        candidates_manifest=candidates_manifest,
-        dry_run=dry_run,
-        output_path=out_dir / "content_briefs.json",
+    briefs_file = out_dir / "content_briefs.json"
+    briefs_manifest = _load_reusable_content_briefs(
+        briefs_file,
+        selection_manifest,
+        candidate_map,
     )
+    if briefs_manifest is not None and not dry_run:
+        logger.info("Reusing saved content briefs for the current page selection.")
+        with open(briefs_file, "w", encoding="utf-8") as f:
+            json.dump(briefs_manifest, f, indent=2, ensure_ascii=False)
+    else:
+        briefs_manifest, briefs_file = generate_all_content_briefs(
+            selected_manifest=selection_manifest,
+            candidates_manifest=candidates_manifest,
+            dry_run=dry_run,
+            output_path=briefs_file,
+        )
 
     if briefs_only:
         return {
@@ -277,7 +345,6 @@ def run_content_generation_phase(
         }
 
     # 5. Compile page contexts from selected candidates & match with briefs
-    candidate_map = {c.candidate_id: c for c in candidates_manifest.candidates}
     briefs_map = {b["page_id"]: b for b in briefs_manifest.get("briefs", [])}
 
     page_contexts = [
