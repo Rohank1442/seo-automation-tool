@@ -131,19 +131,17 @@ class GenerateBriefStep(PipelineStep):
         prompt = build_structured_content_brief_prompt(
             page_title=context.title,
             page_url=context.url,
-            canonical_url=context.canonical_url,
             page_type=context.page_type,
             cluster_name=context.cluster,
             primary_keyword=context.primary_keyword,
             secondary_keywords=context.secondary_keywords,
             search_intent=context.search_intent,
-            priority=context.priority,
             target_audience=context.target_audience,
             site_purpose=context.site_purpose,
-            internal_links=internal_links_models,
+            internal_links_outbound=[link.model_dump() for link in internal_links_models],
             content_gaps=context.content_gaps,
             research_questions=context.research_questions,
-            word_count=context.candidate.content_strategy.recommended_word_count,
+            recommended_word_count=context.candidate.content_strategy.recommended_word_count,
         )
 
         try:
