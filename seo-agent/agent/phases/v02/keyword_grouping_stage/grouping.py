@@ -8,8 +8,8 @@ from prompts.v02_prompts import KEYWORD_GROUPING_SYSTEM_PROMPT, KeywordGroupingR
 from .keywords import extract_cluster_keywords
 from .prompt_builder import build_grouping_prompt
 from .validation import (
+    clean_keyword_grouping,
     enrich_groups,
-    remove_unresearched_keywords,
     validate_grouping,
 )
 
@@ -44,8 +44,14 @@ def build_keyword_groups(research: dict[str, Any]) -> dict[str, Any]:
             continue
         try:
             grouping = group_cluster_keywords(cluster)
-            grouping, removed_keywords, dropped_groups, promoted_primaries = (
-                remove_unresearched_keywords(keywords, grouping)
+            (
+                grouping,
+                removed_keywords,
+                dropped_groups,
+                promoted_primaries,
+                resolved_duplicates,
+            ) = clean_keyword_grouping(
+                keywords, grouping
             )
             if removed_keywords:
                 print(
@@ -54,8 +60,14 @@ def build_keyword_groups(research: dict[str, Any]) -> dict[str, Any]:
                 )
             if promoted_primaries:
                 print(
-                    f"  ⚠ Promoted a researched secondary keyword to primary in "
+                    f"  ⚠ Promoted a remaining researched keyword to primary in "
                     f"{promoted_primaries} group(s)."
+                )
+            for duplicate in resolved_duplicates:
+                print(
+                    f"  ⚠ Kept duplicate keyword '{duplicate['keyword']}' in group "
+                    f"'{duplicate['kept_group']}' and removed "
+                    f"{duplicate['removed_assignments']} extra assignment(s)."
                 )
             if dropped_groups:
                 print(

@@ -5,49 +5,110 @@ from typing import Any
 from .keywords import build_keyword_lookup, normalize_keyword
 
 
-def remove_unresearched_keywords(
+def clean_keyword_grouping(
     keywords: list[dict[str, Any]], grouping: dict[str, Any]
-) -> tuple[dict[str, Any], list[str], int, int]:
-    """Remove model-added keywords and discard groups with no researched terms."""
+) -> tuple[dict[str, Any], list[str], int, int, list[dict[str, Any]]]:
+    """Remove invented and duplicate assignments while retaining researched terms."""
     supplied = {normalize_keyword(item["keyword"]) for item in keywords if item.get("keyword")}
-    cleaned_groups = []
     removed_keywords = []
-    dropped_groups = 0
-    promoted_primaries = 0
+    occurrences_by_keyword: dict[str, list[dict[str, Any]]] = {}
+    occurrences_by_group: dict[int, list[dict[str, Any]]] = {}
+    occurrence_id = 0
 
-    for group in grouping.get("groups", []):
-        primary = group.get("primary_keyword")
+    for group_index, group in enumerate(grouping.get("groups", [])):
+        occurrences_by_group[group_index] = []
         secondary_keywords = group.get("secondary_keywords", [])
         if not isinstance(secondary_keywords, list):
             secondary_keywords = []
+        candidates = [("primary", 0, group.get("primary_keyword"))]
+        candidates.extend(
+            ("secondary", index, keyword)
+            for index, keyword in enumerate(secondary_keywords)
+        )
 
-        primary_is_researched = bool(primary) and normalize_keyword(primary) in supplied
-        if primary and not primary_is_researched:
-            removed_keywords.append(primary)
-
-        researched_secondaries = []
-        for keyword in secondary_keywords:
-            if normalize_keyword(keyword) in supplied:
-                researched_secondaries.append(keyword)
-            else:
-                removed_keywords.append(keyword)
-
-        if not primary_is_researched:
-            if not researched_secondaries:
-                dropped_groups += 1
+        for role, position, keyword in candidates:
+            normalized = normalize_keyword(keyword) if keyword else ""
+            if not normalized or normalized not in supplied:
+                if keyword:
+                    removed_keywords.append(keyword)
                 continue
-            # Keep a group of researched terms by promoting its first valid secondary.
-            primary = researched_secondaries.pop(0)
+
+            occurrence = {
+                "id": occurrence_id,
+                "group_index": group_index,
+                "role": role,
+                "position": position,
+                "keyword": keyword,
+                "normalized": normalized,
+            }
+            occurrence_id += 1
+            occurrences_by_keyword.setdefault(normalized, []).append(occurrence)
+            occurrences_by_group[group_index].append(occurrence)
+
+    # Prefer a primary assignment. For ties, keep the first group in Gemini's output.
+    owners: dict[str, int] = {}
+    resolved_duplicates = []
+    for occurrences in occurrences_by_keyword.values():
+        winner = min(
+            occurrences,
+            key=lambda item: (
+                0 if item["role"] == "primary" else 1,
+                item["group_index"],
+                item["position"],
+            ),
+        )
+        owners[winner["normalized"]] = winner["id"]
+        if len(occurrences) > 1:
+            winner_group = grouping["groups"][winner["group_index"]]
+            resolved_duplicates.append({
+                "keyword": winner["keyword"],
+                "kept_group": winner_group.get("group_id") or f"group {winner['group_index'] + 1}",
+                "removed_assignments": len(occurrences) - 1,
+            })
+
+    cleaned_groups = []
+    dropped_groups = 0
+    promoted_primaries = 0
+
+    for group_index, group in enumerate(grouping.get("groups", [])):
+        owned = [
+            item
+            for item in occurrences_by_group[group_index]
+            if owners[item["normalized"]] == item["id"]
+        ]
+        primary_occurrence = next(
+            (item for item in owned if item["role"] == "primary"), None
+        )
+
+        if primary_occurrence:
+            primary = primary_occurrence["keyword"]
+            secondary_keywords = [
+                item["keyword"] for item in owned if item["role"] == "secondary"
+            ]
+        elif owned:
+            # A duplicate or invented primary may have been removed; retain this
+            # group's researched terms by promoting its first remaining secondary.
+            primary = owned[0]["keyword"]
+            secondary_keywords = [item["keyword"] for item in owned[1:]]
             promoted_primaries += 1
+        else:
+            dropped_groups += 1
+            continue
 
         cleaned_group = dict(group)
         cleaned_group["primary_keyword"] = primary
-        cleaned_group["secondary_keywords"] = researched_secondaries
+        cleaned_group["secondary_keywords"] = secondary_keywords
         cleaned_groups.append(cleaned_group)
 
     cleaned_grouping = dict(grouping)
     cleaned_grouping["groups"] = cleaned_groups
-    return cleaned_grouping, removed_keywords, dropped_groups, promoted_primaries
+    return (
+        cleaned_grouping,
+        removed_keywords,
+        dropped_groups,
+        promoted_primaries,
+        resolved_duplicates,
+    )
 
 
 def validate_grouping(keywords: list[dict[str, Any]], grouping: dict[str, Any]) -> None:
