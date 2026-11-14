@@ -260,7 +260,7 @@ def build_unified_page_candidates(artifacts: LoadedArtifacts) -> PageCandidatesM
             canonical_url = f"{canonical_domain}{url}"
 
             matched_group = None
-            raw_group_id = page_id.replace("page:", "").replace("cluster:", "")
+            raw_group_id = page.get("source_group_id") or page_id.replace("page:", "").replace("cluster:", "")
             if raw_group_id in kw_group_by_id:
                 matched_group = kw_group_by_id[raw_group_id]
             elif primary_kw and primary_kw.lower().strip() in kw_group_by_primary_kw:

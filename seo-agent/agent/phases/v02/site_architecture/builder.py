@@ -167,6 +167,58 @@ def create_final_page(
     }
 
 
+def merge_group_into_cluster_root(
+    cluster_page: Dict[str, Any],
+    group: Dict[str, Any],
+    audit: Dict[str, Any],
+    keyword_lookup: Dict[str, Dict[str, Any]],
+) -> None:
+    """Make the cluster root own a group targeting the exact same topic."""
+    primary_keyword = str(group.get("primary_keyword", "")).strip()
+    keyword_data = keyword_lookup.get(normalize_keyword(primary_keyword), {})
+    cluster_page.update({
+        "primary_keyword": primary_keyword,
+        "secondary_keywords": group.get("secondary_keywords", []),
+        "intent": keyword_data.get("intent") or cluster_page.get("intent", "mixed"),
+        "priority": determine_page_priority(primary_keyword, keyword_lookup),
+        "source_group_id": group.get("group_id"),
+        "audit_status": audit.get("status"),
+        "audit_confidence": audit.get("confidence"),
+        "group_reasoning": group.get("reasoning", ""),
+    })
+
+
+def ensure_unique_page_urls(pages: List[Dict[str, Any]]) -> None:
+    """Give distinct pages deterministic slugs when their URLs collide."""
+    used_urls = set()
+    for page in pages:
+        url = page["url"]
+        if url in used_urls:
+            original_slug = page["slug"]
+            suffix = slugify(
+                page.get("source_group_id")
+                or page.get("cluster")
+                or page.get("id", "")
+            )
+            if not suffix or suffix == original_slug:
+                suffix = "page"
+
+            candidate = f"{original_slug}-{suffix}"
+            counter = 2
+            while f"/{candidate}/" in used_urls:
+                candidate = f"{original_slug}-{suffix}-{counter}"
+                counter += 1
+
+            page["slug"] = candidate
+            page["url"] = f"/{candidate}/"
+            print(
+                f"  WARNING: URL slug collision for '{page.get('title', page.get('id'))}'; "
+                f"assigned unique URL {page['url']}"
+            )
+
+        used_urls.add(page["url"])
+
+
 def build_cluster_architecture(
     cluster_name: str,
     groups: List[Dict[str, Any]],
@@ -279,6 +331,19 @@ def build_cluster_architecture(
                     original_audit = audit
                     break
 
+        primary_keyword = str(group.get("primary_keyword", "")).strip()
+        if (
+            primary_keyword
+            and normalize_keyword(primary_keyword) == normalize_keyword(cluster_name)
+        ):
+            merge_group_into_cluster_root(
+                cluster_page,
+                group,
+                original_audit,
+                keyword_lookup,
+            )
+            continue
+
         page = create_final_page(
             group,
             cluster_name,
@@ -338,6 +403,7 @@ def build_site_architecture(
 
     all_pages: List[Dict[str, Any]] = []
     cluster_architectures: List[Dict[str, Any]] = []
+    used_page_ids = set()
 
     for cluster in grouped_clusters:
         if not isinstance(
@@ -371,6 +437,28 @@ def build_site_architecture(
             keyword_lookup,
         )
 
+        # Page IDs are project-wide references, even though group IDs are
+        # produced independently inside each cluster.
+        for page in architecture["pages"]:
+            old_page_id = page["id"]
+            if old_page_id in used_page_ids:
+                suffix = slugify(
+                    page.get("source_group_id") or cluster_name
+                ) or "page"
+                new_page_id = f"{old_page_id}:{suffix}"
+                counter = 2
+                while new_page_id in used_page_ids:
+                    new_page_id = f"{old_page_id}:{suffix}-{counter}"
+                    counter += 1
+                page["id"] = new_page_id
+                if page.get("page_type") == "cluster":
+                    old_root_id = old_page_id
+                    architecture["cluster"]["id"] = new_page_id
+                    for child in architecture["pages"]:
+                        if child.get("parent_page_id") == old_root_id:
+                            child["parent_page_id"] = new_page_id
+            used_page_ids.add(page["id"])
+
         cluster_architectures.append(
             architecture
         )
@@ -378,6 +466,8 @@ def build_site_architecture(
         all_pages.extend(
             architecture["pages"]
         )
+
+    ensure_unique_page_urls(all_pages)
 
     return {
         "version": "0.2",
