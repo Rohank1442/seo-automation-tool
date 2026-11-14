@@ -1,6 +1,7 @@
 """Build cluster and page records, then assemble the final site architecture."""
 
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .group_splitting import resolve_split_group
@@ -224,6 +225,7 @@ def build_cluster_architecture(
     groups: List[Dict[str, Any]],
     audit_lookup: Dict[str, Dict[str, Any]],
     keyword_lookup: Dict[str, Dict[str, Any]],
+    split_cache_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
     Build the final page hierarchy for one topic cluster.
@@ -278,6 +280,7 @@ def build_cluster_architecture(
                 cluster_name,
                 group,
                 audit,
+                cache_dir=split_cache_dir,
             )
 
             print(
@@ -368,6 +371,7 @@ def build_site_architecture(
     keyword_groups: Dict[str, Any],
     audit_data: Dict[str, Any],
     source_files: Optional[Dict[str, str]] = None,
+    split_cache_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
     Build the final SEO architecture using the outputs of the
@@ -435,6 +439,7 @@ def build_site_architecture(
             ),
             audit_lookup,
             keyword_lookup,
+            split_cache_dir=split_cache_dir,
         )
 
         # Page IDs are project-wide references, even though group IDs are

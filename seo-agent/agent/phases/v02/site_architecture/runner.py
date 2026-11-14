@@ -158,6 +158,7 @@ def run_v02_architecture(outputs_root: Optional[Path] = None) -> Dict[str, Any]:
             "keyword_groups": groups_path,
             "group_audit": audit_path,
         },
+        split_cache_dir=v02_dir / "checkpoints" / "split_groups",
     )
 
     print(

@@ -1,6 +1,9 @@
 """Prompt, resolve, and validate audited keyword groups marked for splitting."""
 
+import hashlib
 import json
+import re
+from pathlib import Path
 from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
@@ -207,6 +210,7 @@ def resolve_split_group(
     cluster_name: str,
     group: Dict[str, Any],
     audit: Dict[str, Any],
+    cache_dir: Path | None = None,
 ) -> List[Dict[str, Any]]:
     """
     Ask Gemini to split a group that the audit stage marked as
@@ -222,6 +226,31 @@ def resolve_split_group(
         audit,
     )
 
+    cache_path = None
+    if cache_dir is not None:
+        cache_key = hashlib.sha256(
+            f"{SPLIT_GROUP_SYSTEM_PROMPT}\n{prompt}".encode("utf-8")
+        ).hexdigest()[:16]
+        safe_group_id = re.sub(
+            r"[^a-z0-9-]+",
+            "-",
+            str(group.get("group_id", "group")).lower(),
+        ).strip("-") or "group"
+        cache_path = Path(cache_dir) / f"{safe_group_id}-{cache_key}.json"
+
+        if cache_path.is_file():
+            try:
+                cached_data = json.loads(cache_path.read_text(encoding="utf-8"))
+                cached_response = FinalKeywordGroupResponse.model_validate(cached_data)
+                validate_split_groups(group, cached_response)
+                print(f"    Reusing cached split for '{group.get('group_id')}'.")
+                return [item.model_dump() for item in cached_response.groups]
+            except Exception as exc:
+                print(
+                    f"    Cached split for '{group.get('group_id')}' is invalid; "
+                    f"regenerating it ({exc})."
+                )
+
     response = generate_json(
         prompt=prompt,
         response_schema=FinalKeywordGroupResponse,
@@ -232,6 +261,15 @@ def resolve_split_group(
         group,
         response,
     )
+
+    if cache_path is not None:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = cache_path.with_suffix(".tmp")
+        temporary_path.write_text(
+            json.dumps(response.model_dump(), indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        temporary_path.replace(cache_path)
 
     return [
         item.model_dump()
