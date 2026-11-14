@@ -7,7 +7,11 @@ from prompts.v02_prompts import KEYWORD_GROUPING_SYSTEM_PROMPT, KeywordGroupingR
 
 from .keywords import extract_cluster_keywords
 from .prompt_builder import build_grouping_prompt
-from .validation import enrich_groups, validate_grouping
+from .validation import (
+    enrich_groups,
+    remove_unresearched_keywords,
+    validate_grouping,
+)
 
 
 def group_cluster_keywords(cluster: dict[str, Any]) -> dict[str, Any]:
@@ -40,6 +44,23 @@ def build_keyword_groups(research: dict[str, Any]) -> dict[str, Any]:
             continue
         try:
             grouping = group_cluster_keywords(cluster)
+            grouping, removed_keywords, dropped_groups, promoted_primaries = (
+                remove_unresearched_keywords(keywords, grouping)
+            )
+            if removed_keywords:
+                print(
+                    f"  ⚠ Removed {len(removed_keywords)} unresearched keyword(s): "
+                    + ", ".join(f"'{keyword}'" for keyword in removed_keywords)
+                )
+            if promoted_primaries:
+                print(
+                    f"  ⚠ Promoted a researched secondary keyword to primary in "
+                    f"{promoted_primaries} group(s)."
+                )
+            if dropped_groups:
+                print(
+                    f"  ⚠ Dropped {dropped_groups} group(s) with no researched keywords."
+                )
             validate_grouping(keywords, grouping)
             enriched = enrich_groups(grouping, keywords)
             print(f"  ✓ Generated {len(enriched['groups'])} page groups")

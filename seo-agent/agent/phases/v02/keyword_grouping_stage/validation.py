@@ -5,8 +5,53 @@ from typing import Any
 from .keywords import build_keyword_lookup, normalize_keyword
 
 
+def remove_unresearched_keywords(
+    keywords: list[dict[str, Any]], grouping: dict[str, Any]
+) -> tuple[dict[str, Any], list[str], int, int]:
+    """Remove model-added keywords and discard groups with no researched terms."""
+    supplied = {normalize_keyword(item["keyword"]) for item in keywords if item.get("keyword")}
+    cleaned_groups = []
+    removed_keywords = []
+    dropped_groups = 0
+    promoted_primaries = 0
+
+    for group in grouping.get("groups", []):
+        primary = group.get("primary_keyword")
+        secondary_keywords = group.get("secondary_keywords", [])
+        if not isinstance(secondary_keywords, list):
+            secondary_keywords = []
+
+        primary_is_researched = bool(primary) and normalize_keyword(primary) in supplied
+        if primary and not primary_is_researched:
+            removed_keywords.append(primary)
+
+        researched_secondaries = []
+        for keyword in secondary_keywords:
+            if normalize_keyword(keyword) in supplied:
+                researched_secondaries.append(keyword)
+            else:
+                removed_keywords.append(keyword)
+
+        if not primary_is_researched:
+            if not researched_secondaries:
+                dropped_groups += 1
+                continue
+            # Keep a group of researched terms by promoting its first valid secondary.
+            primary = researched_secondaries.pop(0)
+            promoted_primaries += 1
+
+        cleaned_group = dict(group)
+        cleaned_group["primary_keyword"] = primary
+        cleaned_group["secondary_keywords"] = researched_secondaries
+        cleaned_groups.append(cleaned_group)
+
+    cleaned_grouping = dict(grouping)
+    cleaned_grouping["groups"] = cleaned_groups
+    return cleaned_grouping, removed_keywords, dropped_groups, promoted_primaries
+
+
 def validate_grouping(keywords: list[dict[str, Any]], grouping: dict[str, Any]) -> None:
-    """Require each supplied keyword exactly once and reject model inventions."""
+    """Require each supplied keyword exactly once after cleanup."""
     supplied = {normalize_keyword(item["keyword"]) for item in keywords if item.get("keyword")}
     grouped = []
     for group in grouping.get("groups", []):
