@@ -4,17 +4,26 @@ import {
   PageSummary,
   Project,
 } from "./types";
+import { createClient } from "@/lib/supabase/client";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
-async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
-  });
+async function fetchJson<T>(
+  url: string,
+  options?: RequestInit,
+  authenticated: boolean = true,
+): Promise<T> {
+  const headers = new Headers(options?.headers);
+  if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+
+  if (authenticated) {
+    const { data: { session } } = await createClient().auth.getSession();
+    if (session?.access_token) {
+      headers.set("Authorization", `Bearer ${session.access_token}`);
+    }
+  }
+
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const errorText = await res.text();
     throw new Error(`API Error ${res.status}: ${errorText}`);
@@ -23,6 +32,14 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // Public early-access requests
+  async requestEarlyAccess(data: { email: string; use_case?: string }): Promise<{ status: string }> {
+    return fetchJson(`${API_BASE}/access-requests`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }, false);
+  },
+
   // Projects
   async getProjects(): Promise<Project[]> {
     return fetchJson<Project[]>(`${API_BASE}/projects`);
