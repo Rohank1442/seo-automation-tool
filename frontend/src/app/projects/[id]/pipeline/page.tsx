@@ -5,10 +5,11 @@ import { useParams } from "next/navigation";
 import { Play, CheckCircle2, Loader2, Sparkles, Terminal, ArrowRight, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { PipelineEvent } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
 
 export default function PipelinePage() {
   const params = useParams();
-  const projectId = (params?.id as string) || "default-project";
+  const projectId = params?.id as string;
 
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(100);
@@ -52,7 +53,9 @@ export default function PipelinePage() {
     },
   ]);
   const [dryRun, setDryRun] = useState(true);
+  const [streamError, setStreamError] = useState<string | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (logContainerRef.current) {
@@ -60,36 +63,67 @@ export default function PipelinePage() {
     }
   }, [events]);
 
-  function handleStartPipeline() {
+  useEffect(() => () => streamAbortRef.current?.abort(), []);
+
+  async function handleStartPipeline() {
     setIsRunning(true);
     setProgress(5);
     setEvents([]);
+    setStreamError(null);
     setCurrentStep("Initializing live pipeline...");
 
-    const streamUrl = api.getPipelineStreamUrl(projectId, dryRun);
-    const eventSource = new EventSource(streamUrl);
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
 
-    eventSource.onmessage = (e) => {
-      try {
-        const data: PipelineEvent = JSON.parse(e.data);
-        setEvents((prev) => [...prev, data]);
-        setProgress(data.progress_percentage);
-        setCurrentStep(data.message);
-
-        if (data.status === "completed" && data.progress_percentage >= 100) {
-          setIsRunning(false);
-          eventSource.close();
-        }
-      } catch (err) {
-        console.error("SSE parse error:", err);
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Your sign-in session has expired. Please sign in again.");
       }
-    };
 
-    eventSource.onerror = (err) => {
-      console.warn("SSE stream ended or disconnected:", err);
+      const response = await fetch(api.getPipelineStreamUrl(projectId, dryRun), {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`Pipeline request failed (${response.status}): ${await response.text()}`);
+      }
+      if (!response.body) throw new Error("The server did not return an event stream.");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value, { stream: !done });
+        const blocks = buffer.split(/\r?\n\r?\n/);
+        buffer = blocks.pop() || "";
+
+        for (const block of blocks) {
+          const data = block
+            .split(/\r?\n/)
+            .filter((line) => line.startsWith("data:"))
+            .map((line) => line.slice(5).trimStart())
+            .join("\n");
+          if (!data) continue;
+
+          const event: PipelineEvent = JSON.parse(data);
+          setEvents((previous) => [...previous, event]);
+          setProgress(event.progress_percentage);
+          setCurrentStep(event.message);
+        }
+
+        if (done) break;
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        setStreamError(error instanceof Error ? error.message : "The pipeline stream failed.");
+      }
+    } finally {
+      if (streamAbortRef.current === controller) streamAbortRef.current = null;
       setIsRunning(false);
-      eventSource.close();
-    };
+    }
   }
 
   const steps = [
@@ -165,6 +199,7 @@ export default function PipelinePage() {
 
       {/* Progress Bar & Current Status */}
       <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 border border-gray-200 dark:border-gray-800 space-y-4">
+        {streamError && <p className="text-sm text-rose-700 dark:text-rose-300" role="alert">{streamError}</p>}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-sm text-gray-900 dark:text-white">Overall Progress</span>

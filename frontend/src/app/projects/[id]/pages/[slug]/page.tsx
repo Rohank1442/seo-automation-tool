@@ -24,7 +24,7 @@ import { PageDetail } from "@/lib/types";
 
 export default function PageDetailPage() {
   const params = useParams();
-  const projectId = (params?.id as string) || "default-project";
+  const projectId = params?.id as string;
   const slug = params?.slug as string;
 
   const [page, setPage] = useState<PageDetail | null>(null);

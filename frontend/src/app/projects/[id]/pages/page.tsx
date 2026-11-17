@@ -23,7 +23,7 @@ import MetricsCard from "@/components/MetricsCard";
 
 export default function PagesCatalogPage() {
   const params = useParams();
-  const projectId = (params?.id as string) || "default-project";
+  const projectId = params?.id as string;
 
   const [pages, setPages] = useState<PageSummary[]>([]);
   const [loading, setLoading] = useState(true);
