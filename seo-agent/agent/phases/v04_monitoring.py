@@ -57,9 +57,14 @@ INDEXING_REPORT_MD_PATH = OUTPUTS_V04_DIR / "indexing_report.md"
 # DATA GENERATOR / GSC CONNECTOR
 # ============================================================
 
-def load_v03_generated_pages() -> List[Dict[str, Any]]:
-    """Loads all pages generated in v0.3 from outputs/v03/generated_content.json or pages/."""
-    gen_content_path = OUTPUTS_V03_DIR / "generated_content.json"
+def load_v03_generated_pages(project_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Load v0.3 pages, optionally scoped to one dashboard project."""
+    project_v03_dir = (
+        AGENT_DIR / "outputs" / "projects" / project_id / "v03"
+        if project_id
+        else OUTPUTS_V03_DIR
+    )
+    gen_content_path = project_v03_dir / "generated_content.json"
     if gen_content_path.exists():
         try:
             with open(gen_content_path, "r", encoding="utf-8") as f:
@@ -71,7 +76,7 @@ def load_v03_generated_pages() -> List[Dict[str, Any]]:
             logger.warning(f"Could not load master generated_content.json: {e}")
 
     # Fallback to individual pages in pages/*.json
-    pages_dir = OUTPUTS_V03_DIR / "pages"
+    pages_dir = project_v03_dir / "pages"
     pages = []
     if pages_dir.exists():
         for p in sorted(pages_dir.glob("*.json")):
@@ -80,6 +85,10 @@ def load_v03_generated_pages() -> List[Dict[str, Any]]:
                     pages.append(json.load(f))
             except Exception:
                 continue
+
+    if not pages and project_id:
+        logger.info("No generated pages found for project %s.", project_id)
+        return []
 
     if not pages:
         logger.warning("No generated pages found in outputs/v03/. Using default sample pages.")
@@ -240,9 +249,13 @@ def build_and_save_v04_monitoring_report(
     monitored_pages: List[Dict[str, Any]],
     alerts: List[Dict[str, Any]],
     recommendations: List[str],
+    output_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Compile monitoring results and save JSON + Markdown reports."""
-    OUTPUTS_V04_DIR.mkdir(parents=True, exist_ok=True)
+    report_dir = output_dir or OUTPUTS_V04_DIR
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_json_path = report_dir / "indexing_report.json"
+    report_markdown_path = report_dir / "indexing_report.md"
 
     total = len(monitored_pages)
     indexed = sum(1 for p in monitored_pages if p["is_indexed"])
@@ -282,7 +295,7 @@ def build_and_save_v04_monitoring_report(
     }
 
     # 1. Save JSON report
-    with open(INDEXING_REPORT_JSON_PATH, "w", encoding="utf-8") as f:
+    with open(report_json_path, "w", encoding="utf-8") as f:
         json.dump(report_payload, f, indent=2, ensure_ascii=False)
 
     # 2. Build Markdown report
@@ -344,11 +357,11 @@ def build_and_save_v04_monitoring_report(
     for rec in recommendations:
         md_lines.append(f"- {rec}")
 
-    with open(INDEXING_REPORT_MD_PATH, "w", encoding="utf-8") as f:
+    with open(report_markdown_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines))
 
-    logger.info(f"Saved v0.4 JSON report to: {INDEXING_REPORT_JSON_PATH}")
-    logger.info(f"Saved v0.4 Markdown report to: {INDEXING_REPORT_MD_PATH}")
+    logger.info(f"Saved v0.4 JSON report to: {report_json_path}")
+    logger.info(f"Saved v0.4 Markdown report to: {report_markdown_path}")
 
     return report_payload
 
@@ -357,16 +370,26 @@ def build_and_save_v04_monitoring_report(
 # MAIN ENTRY POINT
 # ============================================================
 
-def run_v04_monitoring(days_back: int = 30) -> Dict[str, Any]:
-    """Execute complete v0.4 Indexing Watch & Early Signal Detection pipeline."""
+def run_v04_monitoring(days_back: int = 30, project_id: Optional[str] = None) -> Dict[str, Any]:
+    """Execute v0.4 for one project's pages, or legacy global CLI data."""
     logger.info("==========================================================")
     logger.info("STARTING v0.4 INDEXING WATCH & EARLY SIGNAL DETECTION")
     logger.info("==========================================================")
 
-    pages = load_v03_generated_pages()
+    pages = load_v03_generated_pages(project_id=project_id)
     monitored_pages = fetch_or_simulate_gsc_metrics(pages, days_back=days_back)
     alerts, recommendations = analyze_monitoring_signals(monitored_pages)
-    report = build_and_save_v04_monitoring_report(monitored_pages, alerts, recommendations)
+    output_dir = (
+        AGENT_DIR / "outputs" / "projects" / project_id / "v04"
+        if project_id
+        else OUTPUTS_V04_DIR
+    )
+    report = build_and_save_v04_monitoring_report(
+        monitored_pages,
+        alerts,
+        recommendations,
+        output_dir=output_dir,
+    )
 
     logger.info("==========================================================")
     logger.info(f"v0.4 MONITORING COMPLETE | Indexed: {report['summary']['indexed_percentage']}% | Alerts: {len(alerts)}")
