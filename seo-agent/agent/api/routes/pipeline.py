@@ -3,10 +3,10 @@ Pipeline Execution & SSE Streaming Routes.
 """
 
 import json
-from typing import Optional
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
+from api.dependencies import ApprovedUser, get_approved_user
 from api.schemas import PipelineRunRequest, PipelineStatusResponse
 from core.db import (
     ProjectStoreError,
@@ -16,12 +16,16 @@ from core.db import (
 )
 from services.pipeline_service import PipelineService
 
-router = APIRouter(prefix="/pipeline", tags=["Pipeline Execution"])
+router = APIRouter(
+    prefix="/pipeline",
+    tags=["Pipeline Execution"],
+    dependencies=[Depends(get_approved_user)],
+)
 
 
-def _project_or_404(project_id: str) -> dict:
+def _project_or_404(project_id: str, owner_id: str) -> dict:
     try:
-        project = get_project_record(project_id)
+        project = get_project_record(project_id, owner_id=owner_id)
     except ProjectStoreUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ProjectStoreError as exc:
@@ -36,15 +40,15 @@ def _project_or_404(project_id: str) -> dict:
 async def trigger_pipeline_run(
     project_id: str,
     payload: PipelineRunRequest,
-    background_tasks: BackgroundTasks,
+    user: ApprovedUser = Depends(get_approved_user),
 ):
     """
     Trigger full or partial pipeline execution (v0.1 -> v0.2 -> v0.3).
-    Returns immediately with run ID. Use SSE endpoint `/stream/{project_id}` for live progress.
+    Mark the project as running and return its authenticated SSE stream URL.
     """
-    _project_or_404(project_id)
+    _project_or_404(project_id, user.id)
     try:
-        update_project_record(project_id, {"status": "running"})
+        update_project_record(project_id, {"status": "running"}, owner_id=user.id)
     except ProjectStoreUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ProjectStoreError as exc:
@@ -65,12 +69,13 @@ async def stream_pipeline_progress(
     dry_run: bool = False,
     min_pages: int = 10,
     max_pages: int = 20,
+    user: ApprovedUser = Depends(get_approved_user),
 ):
     """
     Server-Sent Events (SSE) stream yielding real-time progress events
     for v0.1, v0.2, v0.3, and frontend compilation.
     """
-    project = _project_or_404(project_id)
+    project = _project_or_404(project_id, user.id)
     user_idea = project.get("raw_description", "")
 
     async def event_generator():
@@ -96,9 +101,9 @@ async def stream_pipeline_progress(
 
 
 @router.get("/{project_id}/status", response_model=PipelineStatusResponse)
-def get_pipeline_status(project_id: str):
+def get_pipeline_status(project_id: str, user: ApprovedUser = Depends(get_approved_user)):
     """Poll pipeline execution status and completed artifacts."""
-    _project_or_404(project_id)
+    _project_or_404(project_id, user.id)
 
     run_status = PipelineService.get_run_status(project_id)
     return PipelineStatusResponse(
@@ -110,6 +115,6 @@ def get_pipeline_status(project_id: str):
         artifacts_available={
             "v01_research": "/api/v1/pipeline/outputs/v01",
             "v02_architecture": "/api/v1/pipeline/outputs/v02",
-            "v03_content": "/api/v1/pipeline/outputs/v03",
+            "v03_content": f"/api/v1/projects/{project_id}/pages",
         },
     )

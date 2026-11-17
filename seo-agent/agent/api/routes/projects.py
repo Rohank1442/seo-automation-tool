@@ -4,8 +4,9 @@ Projects API Routes.
 
 import uuid
 from typing import List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from api.dependencies import ApprovedUser, get_approved_user
 from api.schemas import ProjectCreateRequest, ProjectResponse, ProjectUpdateRequest
 from core.db import (
     ProjectStoreError,
@@ -16,11 +17,15 @@ from core.db import (
     update_project_record,
 )
 
-router = APIRouter(prefix="/projects", tags=["Projects"])
+router = APIRouter(
+    prefix="/projects",
+    tags=["Projects"],
+    dependencies=[Depends(get_approved_user)],
+)
 
-def _project_or_404(project_id: str) -> dict:
+def _project_or_404(project_id: str, owner_id: str) -> dict:
     try:
-        project = get_project_record(project_id)
+        project = get_project_record(project_id, owner_id=owner_id)
     except ProjectStoreUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ProjectStoreError as exc:
@@ -32,7 +37,10 @@ def _project_or_404(project_id: str) -> dict:
 
 
 @router.post("", response_model=ProjectResponse)
-def create_project(payload: ProjectCreateRequest):
+def create_project(
+    payload: ProjectCreateRequest,
+    user: ApprovedUser = Depends(get_approved_user),
+):
     """Create a new SEO automation project from user's website idea / problem statement."""
     name = payload.name.strip()
     if not name:
@@ -41,6 +49,7 @@ def create_project(payload: ProjectCreateRequest):
 
     project_data = {
         "id": project_id,
+        "owner_id": user.id,
         "name": name,
         "raw_description": payload.raw_description,
         "target_domain": payload.target_domain or "https://example.com",
@@ -58,10 +67,10 @@ def create_project(payload: ProjectCreateRequest):
 
 
 @router.get("", response_model=List[ProjectResponse])
-def list_projects():
-    """List all projects."""
+def list_projects(user: ApprovedUser = Depends(get_approved_user)):
+    """List only the authenticated user's projects."""
     try:
-        return list_project_records()
+        return list_project_records(owner_id=user.id)
     except ProjectStoreUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ProjectStoreError as exc:
@@ -69,18 +78,22 @@ def list_projects():
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
-def get_project(project_id: str):
+def get_project(project_id: str, user: ApprovedUser = Depends(get_approved_user)):
     """Get project details and execution status."""
-    return _project_or_404(project_id)
+    return _project_or_404(project_id, user.id)
 
 
 @router.patch("/{project_id}", response_model=ProjectResponse)
-def update_project(project_id: str, payload: ProjectUpdateRequest):
+def update_project(
+    project_id: str,
+    payload: ProjectUpdateRequest,
+    user: ApprovedUser = Depends(get_approved_user),
+):
     """Update project details."""
-    _project_or_404(project_id)
+    _project_or_404(project_id, user.id)
     updates = payload.model_dump(exclude_none=True)
     try:
-        project = update_project_record(project_id, updates)
+        project = update_project_record(project_id, updates, owner_id=user.id)
     except ProjectStoreUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ProjectStoreError as exc:
