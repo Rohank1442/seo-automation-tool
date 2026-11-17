@@ -77,28 +77,31 @@ def create_project_record(project_data: Dict[str, Any]) -> Dict[str, Any]:
     return response.data[0]
 
 
-def list_project_records() -> List[Dict[str, Any]]:
-    """List dashboard projects from the durable projects table."""
+def list_project_records(owner_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """List durable projects, optionally restricting results to their owner."""
     client = _require_project_db_client()
     try:
-        response = client.table("projects").select("*").order("created_at").execute()
+        query = client.table("projects").select("*")
+        if owner_id is not None:
+            query = query.eq("owner_id", owner_id)
+        response = query.order("created_at").execute()
     except Exception as exc:
         logger.exception("Supabase list project records failed")
         raise ProjectStoreError("Could not list project records.") from exc
     return response.data or []
 
 
-def get_project_record(project_id: str) -> Optional[Dict[str, Any]]:
-    """Fetch one dashboard project by its project ID."""
+def get_project_record(
+    project_id: str,
+    owner_id: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """Fetch a project by ID, optionally requiring the specified owner."""
     client = _require_project_db_client()
     try:
-        response = (
-            client.table("projects")
-            .select("*")
-            .eq("id", project_id)
-            .limit(1)
-            .execute()
-        )
+        query = client.table("projects").select("*").eq("id", project_id)
+        if owner_id is not None:
+            query = query.eq("owner_id", owner_id)
+        response = query.limit(1).execute()
     except Exception as exc:
         logger.exception("Supabase get project record failed")
         raise ProjectStoreError("Could not retrieve the project record.") from exc
@@ -110,23 +113,59 @@ def get_project_record(project_id: str) -> Optional[Dict[str, Any]]:
 def update_project_record(
     project_id: str,
     updates: Dict[str, Any],
+    owner_id: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Update one dashboard project and return its persisted row."""
+    """Update one project, optionally requiring its owner, and return its row."""
     client = _require_project_db_client()
     values = {**updates, "updated_at": datetime.now(timezone.utc).isoformat()}
     try:
-        response = (
-            client.table("projects")
-            .update(values)
-            .eq("id", project_id)
-            .execute()
-        )
+        query = client.table("projects").update(values).eq("id", project_id)
+        if owner_id is not None:
+            query = query.eq("owner_id", owner_id)
+        response = query.execute()
     except Exception as exc:
         logger.exception("Supabase update project record failed")
         raise ProjectStoreError("Could not update the project record.") from exc
 
     rows = response.data or []
     return rows[0] if rows else None
+
+
+def is_access_request_approved(email: str) -> bool:
+    """Return whether the normalized email has an explicitly approved request."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("access_requests")
+            .select("id")
+            .eq("email", email.strip().lower())
+            .eq("status", "approved")
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase access approval lookup failed")
+        raise ProjectStoreError("Could not check the access request status.") from exc
+    return bool(response.data)
+
+
+def save_access_request(email: str, use_case: Optional[str] = None) -> None:
+    """Persist a public early-access request without replacing an existing decision."""
+    client = _require_project_db_client()
+    request_data = {
+        "email": email,
+        "use_case": use_case,
+        "status": "pending",
+    }
+    try:
+        client.table("access_requests").upsert(
+            request_data,
+            on_conflict="email",
+            ignore_duplicates=True,
+        ).execute()
+    except Exception as exc:
+        logger.exception("Supabase save access request failed")
+        raise ProjectStoreError("Could not save the early-access request.") from exc
 
 
 def create_project(raw_description: str) -> Dict[str, Any]:
