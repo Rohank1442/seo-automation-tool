@@ -21,7 +21,7 @@ import StatusBadge from "@/components/StatusBadge";
 
 export default function MonitoringDashboardPage() {
   const params = useParams();
-  const projectId = (params?.id as string) || "default-project";
+  const projectId = params?.id as string;
 
   const [data, setData] = useState<MonitoringDashboardData | null>(null);
   const [loading, setLoading] = useState(true);

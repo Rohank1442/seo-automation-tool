@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import { PlayCircle, FileText, Activity, ShieldCheck, ArrowLeft, Download } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
 export default function ProjectLayout({
@@ -13,9 +13,25 @@ export default function ProjectLayout({
 }) {
   const pathname = usePathname();
   const params = useParams();
-  const projectId = (params?.id as string) || "default-project";
+  const projectId = params?.id as string;
   const [exporting, setExporting] = useState(false);
   const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState("Loading project…");
+
+  useEffect(() => {
+    let active = true;
+    api.getProject(projectId)
+      .then((project) => {
+        if (active) setProjectName(project.name);
+      })
+      .catch(() => {
+        if (active) setProjectName("Project not found or access denied");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [projectId]);
 
   const navItems = [
     {
@@ -68,7 +84,7 @@ export default function ProjectLayout({
               Project #{projectId}
             </span>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-              Virtual Try-On Fashion SEO
+              {projectName}
             </h1>
           </div>
         </div>
