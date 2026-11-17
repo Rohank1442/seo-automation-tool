@@ -3,27 +3,49 @@ v0.4 Indexing Watch & Monitoring API Routes.
 """
 
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from api.dependencies import ApprovedUser, get_approved_user
 from api.schemas import GSCMetricSyncRequest, MonitoringDashboardResponse
+from core.db import ProjectStoreError, ProjectStoreUnavailable, get_project_record
 from phases.v04_monitoring import run_v04_monitoring
 
-router = APIRouter(prefix="/monitoring", tags=["v0.4 Indexing Watch"])
+router = APIRouter(
+    prefix="/monitoring",
+    tags=["v0.4 Indexing Watch"],
+    dependencies=[Depends(get_approved_user)],
+)
 
 AGENT_DIR = Path(__file__).resolve().parent.parent.parent
-OUTPUTS_V04_DIR = AGENT_DIR / "outputs" / "v04"
+
+
+def _owned_report_path(project_id: str, owner_id: str) -> Path:
+    """Return a project report path only after confirming the caller owns it."""
+    try:
+        project = get_project_record(project_id, owner_id=owner_id)
+    except ProjectStoreUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if project is None:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+    return AGENT_DIR / "outputs" / "projects" / project_id / "v04" / "indexing_report.json"
 
 
 @router.get("/{project_id}/dashboard", response_model=MonitoringDashboardResponse)
-def get_monitoring_dashboard(project_id: str):
+def get_monitoring_dashboard(
+    project_id: str,
+    user: ApprovedUser = Depends(get_approved_user),
+):
     """
     Get current v0.4 Indexing Watch & Early Signal Detection dashboard:
     Indexation rate, impressions, clicks, status categories, anomalies, and recommendations.
     """
-    report_json_path = OUTPUTS_V04_DIR / "indexing_report.json"
+    report_json_path = _owned_report_path(project_id, user.id)
     if not report_json_path.exists():
         # Automatically run initial monitoring analysis if report does not yet exist
-        report_data = run_v04_monitoring(days_back=30)
+        report_data = run_v04_monitoring(days_back=30, project_id=project_id)
     else:
         import json
         with open(report_json_path, "r", encoding="utf-8") as f:
@@ -51,9 +73,14 @@ def get_monitoring_dashboard(project_id: str):
 
 
 @router.post("/{project_id}/sync", response_model=MonitoringDashboardResponse)
-def sync_monitoring_metrics(project_id: str, payload: GSCMetricSyncRequest):
+def sync_monitoring_metrics(
+    project_id: str,
+    payload: GSCMetricSyncRequest,
+    user: ApprovedUser = Depends(get_approved_user),
+):
     """
     Trigger a fresh sync of Google Search Console indexation & query impression metrics.
     """
-    report_data = run_v04_monitoring(days_back=payload.days_back)
-    return get_monitoring_dashboard(project_id)
+    _owned_report_path(project_id, user.id)
+    run_v04_monitoring(days_back=payload.days_back, project_id=project_id)
+    return get_monitoring_dashboard(project_id, user)
