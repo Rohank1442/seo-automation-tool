@@ -15,6 +15,10 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
 DATAFORSEO_LOGIN = os.getenv("DATAFORSEO_LOGIN")
 DATAFORSEO_PASSWORD = os.getenv("DATAFORSEO_PASSWORD")
+# Product APIs stay closed unless the trusted local environment opts out.
+EARLY_ACCESS_MODE = os.getenv("EARLY_ACCESS_MODE", "true").strip().lower() not in {
+    "0", "false", "no", "off"
+}
 
 def validate_config():
     missing = []
