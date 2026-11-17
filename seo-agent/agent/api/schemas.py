@@ -9,12 +9,41 @@ Covers:
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+import re
+from pydantic import BaseModel, Field, field_validator
 
 
 # ============================================================
 # PROJECT SCHEMAS
 # ============================================================
+
+class AccessRequestCreate(BaseModel):
+    email: str = Field(..., min_length=3, max_length=320)
+    use_case: Optional[str] = Field(None, max_length=1000)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_and_validate_email(cls, value: Any) -> str:
+        if not isinstance(value, str):
+            raise ValueError("Enter a valid email address.")
+        email = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            raise ValueError("Enter a valid email address.")
+        return email
+
+    @field_validator("use_case", mode="before")
+    @classmethod
+    def normalize_use_case(cls, value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("Use case must be text.")
+        value = value.strip()
+        return value or None
+
+
+class AccessRequestResponse(BaseModel):
+    status: str = "received"
 
 class ProjectCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, description="Human-readable project name")
