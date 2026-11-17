@@ -5,6 +5,7 @@
 -- 1. Projects Table
 CREATE TABLE IF NOT EXISTS projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL REFERENCES auth.users(id),
     name TEXT NOT NULL,
     raw_description TEXT NOT NULL,
     target_domain TEXT NOT NULL DEFAULT 'https://example.com',
@@ -14,6 +15,19 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+-- 1a. Public early-access requests (manually reviewed by the product owner)
+CREATE TABLE IF NOT EXISTS access_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT NOT NULL UNIQUE,
+    use_case TEXT,
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'approved', 'declined')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ
+);
+ALTER TABLE access_requests ENABLE ROW LEVEL SECURITY;
 
 -- 2. Project Clarifications / Interactive Interview Table (v0.1 Pre-run confirmation)
 CREATE TABLE IF NOT EXISTS project_clarifications (
@@ -27,6 +41,7 @@ CREATE TABLE IF NOT EXISTS project_clarifications (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE project_clarifications ENABLE ROW LEVEL SECURITY;
 
 -- 3. Pipeline Runs Table (Async execution & SSE logs persistence)
 CREATE TABLE IF NOT EXISTS pipeline_runs (
@@ -43,6 +58,7 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
     started_at TIMESTAMPTZ DEFAULT NOW(),
     completed_at TIMESTAMPTZ
 );
+ALTER TABLE pipeline_runs ENABLE ROW LEVEL SECURITY;
 
 -- 4. Topic Clusters Table (v0.1 Research)
 CREATE TABLE IF NOT EXISTS clusters (
@@ -53,6 +69,7 @@ CREATE TABLE IF NOT EXISTS clusters (
     tier TEXT DEFAULT 'tier_1',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE clusters ENABLE ROW LEVEL SECURITY;
 
 -- 5. Keywords Table (v0.1 Research)
 CREATE TABLE IF NOT EXISTS keywords (
@@ -67,6 +84,7 @@ CREATE TABLE IF NOT EXISTS keywords (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(cluster_id, keyword)
 );
+ALTER TABLE keywords ENABLE ROW LEVEL SECURITY;
 
 -- 6. Site Architecture & Technical Foundation Table (v0.2 Site Setup)
 CREATE TABLE IF NOT EXISTS site_architectures (
@@ -82,6 +100,7 @@ CREATE TABLE IF NOT EXISTS site_architectures (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(project_id)
 );
+ALTER TABLE site_architectures ENABLE ROW LEVEL SECURITY;
 
 -- 7. Generated Pages Table (v0.3 Content Generation)
 CREATE TABLE IF NOT EXISTS generated_pages (
@@ -109,6 +128,7 @@ CREATE TABLE IF NOT EXISTS generated_pages (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(project_id, slug)
 );
+ALTER TABLE generated_pages ENABLE ROW LEVEL SECURITY;
 
 -- 8. v0.4 Page Indexing & Search Console Metrics (Weekly Surveillance)
 CREATE TABLE IF NOT EXISTS page_indexing_metrics (
@@ -128,6 +148,7 @@ CREATE TABLE IF NOT EXISTS page_indexing_metrics (
     mined_queries TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE page_indexing_metrics ENABLE ROW LEVEL SECURITY;
 
 -- 9. Monitoring Alerts Table (v0.4 Signal & Anomaly Flags)
 CREATE TABLE IF NOT EXISTS monitoring_alerts (
@@ -141,3 +162,4 @@ CREATE TABLE IF NOT EXISTS monitoring_alerts (
     is_resolved BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE monitoring_alerts ENABLE ROW LEVEL SECURITY;
