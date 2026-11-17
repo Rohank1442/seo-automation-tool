@@ -7,6 +7,7 @@ export interface Project {
   status: string;
   current_phase?: string;
   created_at: string;
+  pages_count?: number;
 }
 
 export interface ResearchSummary {
