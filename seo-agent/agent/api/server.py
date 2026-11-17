@@ -4,14 +4,16 @@ FastAPI Server Entry Point for SEO Automation Platform.
 
 import logging
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from api.routes.monitoring import router as monitoring_router
+from api.routes.auth import router as auth_router
+from api.routes.access_requests import router as access_requests_router
 from api.routes.pages import router as pages_router
 from api.routes.pipeline import router as pipeline_router
 from api.routes.projects import router as projects_router
+from core.config import EARLY_ACCESS_MODE
 
 # Configure root logger
 logging.basicConfig(
@@ -24,21 +26,25 @@ app = FastAPI(
     title="SEO Automation Platform API",
     description="Full-stack API for autonomous niche keyword research, site architecture, first-wave content generation, and v0.4 GSC Indexing Watch.",
     version="0.4.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None if EARLY_ACCESS_MODE else "/docs",
+    redoc_url=None if EARLY_ACCESS_MODE else "/redoc",
+    openapi_url=None if EARLY_ACCESS_MODE else "/openapi.json",
 )
 
 # Enable CORS for local and production frontend dashboards
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
 # Register API routers with /api/v1 prefix
 app.include_router(projects_router, prefix="/api/v1")
+app.include_router(access_requests_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(pipeline_router, prefix="/api/v1")
 app.include_router(pages_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1")
