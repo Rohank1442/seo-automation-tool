@@ -6,8 +6,9 @@ import json
 import re
 from pathlib import Path
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from api.dependencies import ApprovedUser, get_approved_user
 from api.schemas import (
     ExportFrontendRequest,
     ExportFrontendResponse,
@@ -28,19 +29,23 @@ from phases.v03_export_frontend import (
     load_pages_from_directory,
 )
 
-router = APIRouter(prefix="/projects/{project_id}/pages", tags=["Pages & Content"])
+router = APIRouter(
+    prefix="/projects/{project_id}/pages",
+    tags=["Pages & Content"],
+    dependencies=[Depends(get_approved_user)],
+)
 
 AGENT_DIR = Path(__file__).resolve().parent.parent.parent
 PROJECT_OUTPUTS_DIR = AGENT_DIR / "outputs" / "projects"
 
 
-def _project_pages_dir(project_id: str) -> Path:
+def _project_pages_dir(project_id: str, owner_id: str) -> Path:
     """Resolve generated pages only after confirming the project exists."""
     if not re.fullmatch(r"[A-Za-z0-9_-]+", project_id):
         raise HTTPException(status_code=400, detail="Invalid project ID.")
 
     try:
-        project = get_project_record(project_id)
+        project = get_project_record(project_id, owner_id=owner_id)
     except ProjectStoreUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ProjectStoreError as exc:
@@ -60,9 +65,9 @@ def _project_page_json_path(pages_dir: Path, slug: str) -> Path:
 
 
 @router.get("", response_model=List[PageSummaryResponse])
-def list_generated_pages(project_id: str):
+def list_generated_pages(project_id: str, user: ApprovedUser = Depends(get_approved_user)):
     """List all generated pages for a project with health scores and metadata."""
-    pages_dir = _project_pages_dir(project_id)
+    pages_dir = _project_pages_dir(project_id, user.id)
     if not pages_dir.exists():
         return []
 
@@ -100,9 +105,13 @@ def list_generated_pages(project_id: str):
 
 
 @router.get("/{slug}", response_model=PageDetailResponse)
-def get_page_detail(project_id: str, slug: str):
+def get_page_detail(
+    project_id: str,
+    slug: str,
+    user: ApprovedUser = Depends(get_approved_user),
+):
     """Get full details of a specific page: markdown content, FAQ items, and pre-rendered Next.js JSX."""
-    pages_dir = _project_pages_dir(project_id)
+    pages_dir = _project_pages_dir(project_id, user.id)
     json_path = _project_page_json_path(pages_dir, slug)
     if not json_path.exists():
         raise HTTPException(status_code=404, detail=f"Page with slug '{slug}' not found.")
@@ -164,14 +173,26 @@ def get_page_detail(project_id: str, slug: str):
 
 
 @router.post("/export", response_model=ExportFrontendResponse)
-def export_pages_to_frontend(project_id: str, payload: ExportFrontendRequest):
+def export_pages_to_frontend(
+    project_id: str,
+    payload: ExportFrontendRequest,
+    user: ApprovedUser = Depends(get_approved_user),
+):
     """Compile and export all pages to drop-in Next.js or React components."""
-    pages_dir = _project_pages_dir(project_id)
+    pages_dir = _project_pages_dir(project_id, user.id)
     if not pages_dir.exists():
         raise HTTPException(status_code=400, detail="No generated pages found. Run v0.3 first.")
 
     pages = load_pages_from_directory(pages_dir)
-    out_dir = Path(payload.output_dir).resolve() if payload.output_dir else DEFAULT_EXPORT_DIR / project_id
+    project_export_root = (DEFAULT_EXPORT_DIR / project_id).resolve()
+    out_dir = Path(payload.output_dir).resolve() if payload.output_dir else project_export_root
+    try:
+        out_dir.relative_to(project_export_root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Export output must stay within this project's export directory.",
+        ) from exc
 
     cfg = ExportConfig(
         framework=payload.framework,
@@ -195,7 +216,11 @@ def export_pages_to_frontend(project_id: str, payload: ExportFrontendRequest):
 
 
 @router.post("/generate-wave", response_model=GenerateWaveResponse)
-def trigger_additional_wave(project_id: str, payload: GenerateWaveRequest):
+def trigger_additional_wave(
+    project_id: str,
+    payload: GenerateWaveRequest,
+    user: ApprovedUser = Depends(get_approved_user),
+):
     """
     Generate an additional wave of pages without overwriting existing content.
     Supports:
@@ -203,7 +228,7 @@ def trigger_additional_wave(project_id: str, payload: GenerateWaveRequest):
       - Option B: 'specific_cluster' (Candidates for a selected topical cluster)
     """
     try:
-        pages_dir = _project_pages_dir(project_id)
+        pages_dir = _project_pages_dir(project_id, user.id)
         project_outputs_dir = pages_dir.parents[1]
         result = generate_additional_wave(
             strategy_name=payload.strategy,
