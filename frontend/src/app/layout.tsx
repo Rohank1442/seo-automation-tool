@@ -3,9 +3,9 @@ import Navbar from "@/components/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SEO Automation Platform — Autonomous Search Growth Engine",
+  title: "SEO Engine — Request Early Access",
   description:
-    "AI-driven programmatic SEO pipeline: Niche research, URL architecture, content generation, and Google Search Console indexing surveillance.",
+    "Request early access to an SEO workflow for topic research, site architecture, and content planning.",
 };
 
 export default function RootLayout({
