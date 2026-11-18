@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, LockKeyhole, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, LockKeyhole, Mail, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
 
 export default function HomePage() {
@@ -10,7 +10,13 @@ export default function HomePage() {
   const [useCase, setUseCase] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setIsPendingApproval(params.get("status") === "pending_approval");
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,6 +35,23 @@ export default function HomePage() {
 
   return (
     <div className="space-y-20 pb-12">
+      {isPendingApproval && (
+        <div
+          className="rounded-2xl border border-amber-300 bg-amber-50 p-5 text-amber-900 shadow-sm dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-start gap-3">
+            <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div>
+              <h2 className="font-bold text-base">Account verified, but awaiting admin approval</h2>
+              <p className="mt-1 text-sm leading-relaxed text-amber-800 dark:text-amber-300">
+                Your email was successfully authenticated, but access to the dashboard is invitation-only. Your request is in review and you will receive an update once approved.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <section className="grid gap-12 rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-blue-50 p-7 shadow-sm dark:border-slate-800 dark:from-gray-900 dark:to-blue-950/30 sm:p-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div className="max-w-2xl">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-800 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-200">

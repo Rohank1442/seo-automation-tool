@@ -84,7 +84,10 @@ export async function middleware(request: NextRequest) {
     });
 
     if (approvalResponse.ok) return response;
-    if (approvalResponse.status === 401 || approvalResponse.status === 403) {
+    if (approvalResponse.status === 403) {
+      return redirectWithCookies(request, response, "/request-access?status=pending_approval");
+    }
+    if (approvalResponse.status === 401) {
       return redirectWithCookies(request, response, "/request-access");
     }
   } catch {
