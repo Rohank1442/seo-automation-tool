@@ -29,7 +29,7 @@ export default function SignInPage() {
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: true,
           emailRedirectTo: callbackUrl.toString(),
         },
       });
