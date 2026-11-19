@@ -45,6 +45,64 @@ class AccessRequestCreate(BaseModel):
 class AccessRequestResponse(BaseModel):
     status: str = "received"
 
+
+# ============================================================
+# USER & AUTH SCHEMAS (Custom Email/Password Auth)
+# ============================================================
+
+class UserSignUpRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=320)
+    password: str = Field(..., min_length=8, max_length=128, description="Plaintext password (min 8 chars)")
+    full_name: Optional[str] = Field(None, max_length=200)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value: Any) -> str:
+        if not isinstance(value, str):
+            raise ValueError("Enter a valid email address.")
+        email = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            raise ValueError("Enter a valid email address.")
+        return email
+
+    @field_validator("full_name", mode="before")
+    @classmethod
+    def clean_full_name(cls, value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("Name must be text.")
+        cleaned = value.strip()
+        return cleaned or None
+
+
+class UserSignInRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=320)
+    password: str = Field(..., min_length=1, max_length=128)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value: Any) -> str:
+        if not isinstance(value, str):
+            raise ValueError("Enter a valid email address.")
+        email = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            raise ValueError("Enter a valid email address.")
+        return email
+
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    full_name: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class AuthTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
 class ProjectCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, description="Human-readable project name")
     raw_description: str = Field(..., description="User's initial website idea, niche, or problem statement")

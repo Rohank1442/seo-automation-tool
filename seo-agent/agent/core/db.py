@@ -131,22 +131,112 @@ def update_project_record(
     return rows[0] if rows else None
 
 
-def is_access_request_approved(email: str) -> bool:
-    """Return whether the normalized email has an explicitly approved request."""
+def is_access_request_approved(email: str, allow_registered: bool = True) -> bool:
+    """Return whether the normalized email has an explicitly approved (or registered) request."""
     client = _require_project_db_client()
     try:
-        response = (
+        query = (
             client.table("access_requests")
-            .select("id")
+            .select("id, status")
             .eq("email", email.strip().lower())
-            .eq("status", "approved")
-            .limit(1)
-            .execute()
         )
+        if allow_registered:
+            query = query.in_("status", ["approved", "registered"])
+        else:
+            query = query.eq("status", "approved")
+        response = query.limit(1).execute()
     except Exception as exc:
         logger.exception("Supabase access approval lookup failed")
         raise ProjectStoreError("Could not check the access request status.") from exc
     return bool(response.data)
+
+
+def get_access_request_status(email: str) -> Optional[str]:
+    """Return the status ('pending', 'approved', 'declined', 'registered') of an access request, or None."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("access_requests")
+            .select("status")
+            .eq("email", email.strip().lower())
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase get_access_request_status failed")
+        raise ProjectStoreError("Could not check access request status.") from exc
+    rows = response.data or []
+    return rows[0]["status"] if rows else None
+
+
+def mark_access_request_registered(email: str) -> None:
+    """Update access request status to 'registered' once an approved user registers."""
+    client = _require_project_db_client()
+    try:
+        client.table("access_requests").update(
+            {"status": "registered"}
+        ).eq("email", email.strip().lower()).execute()
+    except Exception as exc:
+        logger.exception("Supabase mark_access_request_registered failed")
+
+
+def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    """Fetch user by normalized email from users table."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("users")
+            .select("*")
+            .eq("email", email.strip().lower())
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase get_user_by_email failed")
+        raise ProjectStoreError("Could not retrieve user record.") from exc
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
+def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch user by user_id from users table."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("users")
+            .select("*")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase get_user_by_id failed")
+        raise ProjectStoreError("Could not retrieve user record.") from exc
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
+def create_user_record(
+    email: str,
+    hashed_password: str,
+    full_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Insert a new user record into users table."""
+    client = _require_project_db_client()
+    user_data = {
+        "email": email.strip().lower(),
+        "hashed_password": hashed_password,
+        "full_name": full_name.strip() if full_name else None,
+        "is_active": True,
+    }
+    try:
+        response = client.table("users").insert(user_data).execute()
+    except Exception as exc:
+        logger.exception("Supabase create_user_record failed")
+        raise ProjectStoreError("Could not create user record.") from exc
+    if not response.data:
+        raise ProjectStoreError("User insert returned no record.")
+    return response.data[0]
 
 
 def save_access_request(email: str, use_case: Optional[str] = None) -> None:
