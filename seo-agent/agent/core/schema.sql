@@ -2,10 +2,23 @@
 -- Supabase / PostgreSQL Schema for SEO Automation Platform
 -- ============================================================
 
+-- 0. Custom Users Table (Custom Auth with Email & Password)
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT NOT NULL UNIQUE,
+    hashed_password TEXT NOT NULL,
+    full_name TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(lower(email));
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
 -- 1. Projects Table
 CREATE TABLE IF NOT EXISTS projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id UUID NOT NULL REFERENCES auth.users(id),
+    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     raw_description TEXT NOT NULL,
     target_domain TEXT NOT NULL DEFAULT 'https://example.com',
@@ -23,10 +36,11 @@ CREATE TABLE IF NOT EXISTS access_requests (
     email TEXT NOT NULL UNIQUE,
     use_case TEXT,
     status TEXT NOT NULL DEFAULT 'pending'
-        CHECK (status IN ('pending', 'approved', 'declined')),
+        CHECK (status IN ('pending', 'approved', 'declined', 'registered')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     reviewed_at TIMESTAMPTZ
 );
+CREATE INDEX IF NOT EXISTS idx_access_requests_email ON access_requests(lower(email));
 ALTER TABLE access_requests ENABLE ROW LEVEL SECURITY;
 
 -- 2. Project Clarifications / Interactive Interview Table (v0.1 Pre-run confirmation)
