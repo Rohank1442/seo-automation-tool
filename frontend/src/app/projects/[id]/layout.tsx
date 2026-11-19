@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { PlayCircle, FileText, Activity, ShieldCheck, ArrowLeft, Download } from "lucide-react";
+import { PlayCircle, FileText, Activity, ArrowLeft, Download, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+
+function zipDownloadName(projectName: string): string {
+  const cleaned = projectName.trim().replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "");
+  return `seo-pages-${cleaned || "project"}.zip`;
+}
 
 export default function ProjectLayout({
   children,
@@ -14,15 +19,20 @@ export default function ProjectLayout({
   const pathname = usePathname();
   const params = useParams();
   const projectId = params?.id as string;
-  const [exporting, setExporting] = useState(false);
-  const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [projectName, setProjectName] = useState("Loading project…");
+  const [targetDomain, setTargetDomain] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [baseUrl, setBaseUrl] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     api.getProject(projectId)
       .then((project) => {
-        if (active) setProjectName(project.name);
+        if (!active) return;
+        setProjectName(project.name);
+        setTargetDomain(project.target_domain || "");
       })
       .catch(() => {
         if (active) setProjectName("Project not found or access denied");
@@ -32,6 +42,15 @@ export default function ProjectLayout({
       active = false;
     };
   }, [projectId]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !downloading) setModalOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [modalOpen, downloading]);
 
   const navItems = [
     {
@@ -51,20 +70,30 @@ export default function ProjectLayout({
     },
   ];
 
-  async function handleExport() {
+  function openDownloadModal() {
+    setBaseUrl(targetDomain);
+    setDownloadError(null);
+    setModalOpen(true);
+  }
+
+  async function handleDownload() {
+    const confirmed = baseUrl.trim().replace(/\/+$/, "");
+    if (!confirmed) {
+      setDownloadError("Enter a base URL.");
+      return;
+    }
+
     try {
-      setExporting(true);
-      const res = await api.exportFrontend(projectId, {
-        framework: "next-app",
-        language: "ts",
-        styling: "tailwind",
-      });
-      setExportMsg(`Exported ${res.exported_count} pages to ./generated-pages/`);
-      setTimeout(() => setExportMsg(null), 4000);
-    } catch (e: any) {
-      alert("Export failed: " + e.message);
+      setDownloading(true);
+      setDownloadError(null);
+      await api.downloadPagesZip(projectId, confirmed, zipDownloadName(projectName));
+      setTargetDomain(confirmed);
+      setModalOpen(false);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Download failed.";
+      setDownloadError(message);
     } finally {
-      setExporting(false);
+      setDownloading(false);
     }
   }
 
@@ -89,22 +118,78 @@ export default function ProjectLayout({
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          {exportMsg && (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-              {exportMsg}
-            </span>
-          )}
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-xs shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>{exporting ? "Compiling..." : "Export Next.js Pages"}</span>
-          </button>
-        </div>
+        <button
+          onClick={openDownloadModal}
+          className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-xs shadow-sm hover:opacity-90 transition-opacity"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Download Pages ZIP</span>
+        </button>
       </div>
+
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => {
+            if (!downloading) setModalOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="download-pages-title"
+            className="w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl p-5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="download-pages-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+              Download Pages ZIP
+            </h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              This URL is written into each page canonical, sitemap.xml, and robots.txt.
+            </p>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleDownload();
+              }}
+            >
+              <label htmlFor="download-base-url" className="mt-4 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Website base URL
+              </label>
+              <input
+                id="download-base-url"
+                value={baseUrl}
+                onChange={(event) => setBaseUrl(event.target.value)}
+                disabled={downloading}
+                autoFocus
+                className="mt-1.5 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-blue-500"
+                placeholder="https://yourdomain.com"
+              />
+              {downloadError && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400">{downloadError}</p>
+              )}
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  disabled={downloading}
+                  className="px-3.5 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={downloading}
+                  className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-sm disabled:opacity-50"
+                >
+                  {downloading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{downloading ? "Preparing ZIP…" : "Download ZIP"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-800">

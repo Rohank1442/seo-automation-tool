@@ -165,11 +165,48 @@ export const api = {
     return fetchJson<PageDetail>(`${API_BASE}/projects/${projectId}/pages/${slug}`);
   },
 
-  async exportFrontend(projectId: string, data?: { framework?: string; language?: string; styling?: string }): Promise<any> {
-    return fetchJson(`${API_BASE}/projects/${projectId}/pages/export`, {
+  async downloadPagesZip(projectId: string, baseUrl: string, fallbackFilename: string): Promise<void> {
+    const headers = new Headers({ "Content-Type": "application/json" });
+    const token = getStoredToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    const res = await fetch(`${API_BASE}/projects/${projectId}/pages/download`, {
       method: "POST",
-      body: JSON.stringify(data || {}),
+      headers,
+      credentials: "include",
+      body: JSON.stringify({ base_url: baseUrl }),
     });
+
+    if (!res.ok) {
+      let errorDetail = `API Error ${res.status}`;
+      try {
+        const data = await res.json();
+        if (data?.detail) {
+          errorDetail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+        }
+      } catch {
+        const text = await res.text().catch(() => "");
+        if (text) errorDetail = text;
+      }
+      const error = new Error(errorDetail);
+      (error as Error & { status?: number }).status = res.status;
+      throw error;
+    }
+
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match?.[1] || fallbackFilename;
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
   },
 
   async generatePagesWave(
