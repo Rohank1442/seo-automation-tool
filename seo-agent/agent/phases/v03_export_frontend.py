@@ -16,11 +16,13 @@ Features:
 
 import argparse
 import html
+import io
 import json
 import logging
 import os
 import re
 import sys
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -567,6 +569,132 @@ This directory contains **{count} production-ready Next.js / React components** 
 
     logger.info(f"Successfully exported {count} components to: {target_base}")
     return count, target_base
+
+
+def normalize_download_base_url(base_url: str) -> str:
+    """Trim a download base URL and drop trailing slashes. Any other text is kept."""
+    return base_url.strip().rstrip("/")
+
+
+def zip_page_slug(page: Dict[str, Any]) -> str:
+    """Slug used for both the ZIP path and the rebuilt canonical URL."""
+    slug = str(page.get("slug") or "untitled").strip().strip("/")
+    slug = slug.replace("\\", "-").replace("/", "-")
+    if not slug or slug in {".", ".."} or ".." in slug:
+        return "untitled"
+    return slug
+
+
+def page_is_indexable(page: Dict[str, Any]) -> bool:
+    """Skip pages marked noindex when building sitemap.xml."""
+    if page.get("indexable") is False:
+        return False
+    meta = page.get("metadata") or {}
+    robots = str(meta.get("robots") or page.get("robots") or "")
+    return "noindex" not in robots.lower()
+
+
+def with_download_canonical(page: Dict[str, Any], base_url: str) -> Dict[str, Any]:
+    """Copy a page and point its canonical URL at the confirmed base URL."""
+    slug = zip_page_slug(page)
+    canonical = f"{base_url}/{slug}/"
+    copied = dict(page)
+    copied["slug"] = slug
+    copied["canonical_url"] = canonical
+    meta = dict(copied.get("metadata") or {})
+    meta["canonical_url"] = canonical
+    copied["metadata"] = meta
+    return copied
+
+
+def build_sitemap_xml(pages: List[Dict[str, Any]]) -> str:
+    """Sitemap of indexable pages. Canonicals must already include the download base URL."""
+    entries = []
+    for page in pages:
+        if not page_is_indexable(page):
+            continue
+        loc = html.escape(str(page.get("canonical_url") or ""), quote=True)
+        if not loc:
+            continue
+        entries.append(f"  <url><loc>{loc}</loc></url>")
+    body = "\n".join(entries)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{body}\n"
+        "</urlset>\n"
+    )
+
+
+def build_robots_txt(base_url: str) -> str:
+    """robots.txt that points crawlers at the sitemap for this download."""
+    return f"User-agent: *\nAllow: /\n\nSitemap: {base_url}/sitemap.xml\n"
+
+
+def build_download_readme(count: int) -> str:
+    """Next.js-only instructions included at the root of the ZIP."""
+    generated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    return f"""# Your SEO Pages
+
+## What's in this ZIP?
+- `app/` — {count} Next.js App Router page components, ready to drop in
+- `sitemap.xml` — submit this to Google Search Console
+- `robots.txt` — place at the root of your site
+
+## How to use
+1. Copy the contents of `app/` into your Next.js project's `app/` directory (`app/` or `src/app/`).
+2. Place `sitemap.xml` and `robots.txt` in your project's `public/` folder.
+3. Run `npm run dev` and open any page slug.
+
+Each `page.tsx` includes the page title, description, canonical URL, Open Graph tags, FAQ content, and JSON-LD structured data.
+
+Generated on {generated}.
+"""
+
+
+def zip_download_filename(project_name: str) -> str:
+    """Safe attachment name derived from the project name."""
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", project_name.strip()).strip("-.")
+    if not cleaned:
+        cleaned = "project"
+    return f"seo-pages-{cleaned}.zip"
+
+
+def compile_pages_to_zip_buffer(
+    pages: List[Dict[str, Any]],
+    base_url: str,
+) -> Tuple[bytes, int]:
+    """
+    Compile Next.js App Router pages into an in-memory ZIP.
+
+    Canonical URLs are rebuilt from `base_url`. Nothing is written to disk.
+    """
+    base = normalize_download_base_url(base_url)
+    if not base:
+        raise ValueError("Enter a base URL.")
+
+    config = ExportConfig(
+        framework="next-app",
+        language="ts",
+        styling="tailwind",
+        non_interactive=True,
+    )
+    buffer = io.BytesIO()
+    prepared: List[Dict[str, Any]] = []
+
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for page in pages:
+            prepared_page = with_download_canonical(page, base)
+            prepared.append(prepared_page)
+            content = build_nextjs_app_router_page(prepared_page, config)
+            archive.writestr(f"seo-pages/app/{prepared_page['slug']}/page.tsx", content)
+
+        archive.writestr("seo-pages/sitemap.xml", build_sitemap_xml(prepared))
+        archive.writestr("seo-pages/robots.txt", build_robots_txt(base))
+        archive.writestr("seo-pages/README.md", build_download_readme(len(prepared)))
+
+    logger.info(f"Compiled {len(prepared)} pages into an in-memory ZIP for {base}")
+    return buffer.getvalue(), len(prepared)
 
 
 # ============================================================

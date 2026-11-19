@@ -237,6 +237,10 @@ class ExportFrontendResponse(BaseModel):
     message: str
 
 
+class DownloadPagesRequest(BaseModel):
+    base_url: str = Field(..., description="Base URL written into canonicals, sitemap.xml, and robots.txt")
+
+
 # ============================================================
 # MULTI-WAVE EXPANSION SCHEMAS
 # ============================================================

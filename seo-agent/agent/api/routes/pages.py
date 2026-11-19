@@ -7,9 +7,11 @@ import re
 from pathlib import Path
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 
 from api.dependencies import ApprovedUser, get_approved_user
 from api.schemas import (
+    DownloadPagesRequest,
     ExportFrontendRequest,
     ExportFrontendResponse,
     GenerateWaveRequest,
@@ -18,15 +20,23 @@ from api.schemas import (
     PageSummaryResponse,
 )
 from phases.v03 import generate_additional_wave
-from core.db import ProjectStoreError, ProjectStoreUnavailable, get_project_record
+from core.db import (
+    ProjectStoreError,
+    ProjectStoreUnavailable,
+    get_project_record,
+    update_project_record,
+)
 from phases.v03_export_frontend import (
     DEFAULT_EXPORT_DIR,
     ExportConfig,
     build_nextjs_app_router_page,
     build_nextjs_pages_router_page,
     build_react_spa_page,
+    compile_pages_to_zip_buffer,
     export_frontend_components,
     load_pages_from_directory,
+    normalize_download_base_url,
+    zip_download_filename,
 )
 
 router = APIRouter(
@@ -212,6 +222,62 @@ def export_pages_to_frontend(
         language=payload.language,
         styling=payload.styling,
         message=f"Exported {count} components to {dest}. Ready for copy-paste into your site.",
+    )
+
+
+@router.post("/download")
+def download_pages_zip(
+    project_id: str,
+    payload: DownloadPagesRequest,
+    user: ApprovedUser = Depends(get_approved_user),
+):
+    """Compile generated pages into a Next.js ZIP and return it as a file download."""
+    pages_dir = _project_pages_dir(project_id, user.id)
+    if not pages_dir.exists():
+        raise HTTPException(status_code=400, detail="No generated pages found. Run v0.3 first.")
+
+    base_url = normalize_download_base_url(payload.base_url)
+    if not base_url:
+        raise HTTPException(status_code=400, detail="Enter a base URL.")
+
+    try:
+        project = get_project_record(project_id, owner_id=user.id)
+    except ProjectStoreUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if project is None:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+
+    stored_domain = normalize_download_base_url(project.get("target_domain") or "")
+    if base_url != stored_domain:
+        try:
+            updated = update_project_record(
+                project_id,
+                {"target_domain": base_url},
+                owner_id=user.id,
+            )
+        except ProjectStoreUnavailable as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ProjectStoreError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        if updated is None:
+            raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
+
+    try:
+        pages = load_pages_from_directory(pages_dir)
+        zip_bytes, _count = compile_pages_to_zip_buffer(pages, base_url)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    filename = zip_download_filename(project.get("name") or "project")
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
