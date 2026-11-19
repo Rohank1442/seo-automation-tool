@@ -375,7 +375,7 @@ export default function PagesCatalogPage() {
                   Step 2: Choose Batch Size
                 </label>
                 <div className="grid grid-cols-3 gap-3">
-                  {[10, 25, 50].map((count) => (
+                  {[10].map((count) => (
                     <button
                       key={count}
                       type="button"

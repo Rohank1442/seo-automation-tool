@@ -63,11 +63,11 @@ export default function ProjectLayout({
       href: `/projects/${projectId}/pages`,
       icon: FileText,
     },
-    {
-      label: "Indexing Watch (v0.4)",
-      href: `/projects/${projectId}/monitoring`,
-      icon: Activity,
-    },
+    // {
+    //   label: "Indexing Watch (v0.4)",
+    //   href: `/projects/${projectId}/monitoring`,
+    //   icon: Activity,
+    // },
   ];
 
   function openDownloadModal() {
