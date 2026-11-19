@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut, Sparkles } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { api, getStoredToken } from "@/lib/api";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -15,38 +15,44 @@ export default function Navbar() {
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
     let active = true;
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (active) {
-        setSignedIn(Boolean(data.user));
+    // Fast check for local token or cookie
+    const token = getStoredToken();
+    if (!token && typeof document !== "undefined") {
+      const hasCookie = document.cookie.includes("access_token") || document.cookie.includes("seo_access_token");
+      if (!hasCookie) {
+        setSignedIn(false);
         setSessionChecked(true);
+        return;
       }
-    });
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSignedIn(Boolean(session?.user));
-      setSessionChecked(true);
-    });
+    api
+      .getMe()
+      .then((user) => {
+        if (active) {
+          setSignedIn(Boolean(user?.id));
+          setSessionChecked(true);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSignedIn(false);
+          setSessionChecked(true);
+        }
+      });
 
     return () => {
       active = false;
-      subscription.unsubscribe();
     };
-  }, []);
+  }, [pathname]);
 
   async function handleSignOut() {
     setSigningOut(true);
     setSignOutError(null);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        setSignOutError("We couldn't sign you out. Please try again.");
-        return;
-      }
-
+      await api.signOut();
       setSignedIn(false);
       router.replace("/sign-in");
       router.refresh();
@@ -87,15 +93,35 @@ export default function Navbar() {
               >
                 Projects
               </Link>
-              <button type="button" onClick={handleSignOut} disabled={signingOut} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-wait disabled:opacity-60 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white">
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-wait disabled:opacity-60 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+              >
                 <LogOut className="h-4 w-4" />
                 {signingOut ? "Signing out…" : "Sign out"}
               </button>
             </>
           ) : sessionChecked ? (
             <>
-              <Link href="/sign-in" className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${pathname === "/sign-in" ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"}`}>
+              <Link
+                href="/sign-in"
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                  pathname === "/sign-in"
+                    ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                }`}
+              >
                 Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                className={`rounded-lg px-3.5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors ${
+                  pathname === "/sign-up" ? "ring-2 ring-blue-500/30" : ""
+                }`}
+              >
+                Sign up
               </Link>
             </>
           ) : null}
