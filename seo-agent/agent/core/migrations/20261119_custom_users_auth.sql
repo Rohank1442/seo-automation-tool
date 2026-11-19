@@ -60,15 +60,15 @@ BEGIN
     -- If there are existing auth.users linked to projects, import them into public.users with placeholder hash
     IF to_regclass('auth.users') IS NOT NULL THEN
         INSERT INTO public.users (id, email, hashed_password, created_at)
-        SELECT 
+        SELECT DISTINCT
             au.id, 
             au.email, 
             '$2b$12$e80MvQ0iR1Uq8M0Yn0v60.WbqvE2Q161NqK24W2rGzB5.55qQ.5eq', -- Placeholder hash
             au.created_at
         FROM auth.users au
         JOIN public.projects p ON p.owner_id = au.id
-        ON CONFLICT (id) DO NOTHING
-        ON CONFLICT (email) DO NOTHING;
+        WHERE au.email NOT IN (SELECT email FROM public.users)
+        ON CONFLICT (id) DO NOTHING;
     END IF;
 
     -- Add foreign key constraint to public.users(id)
