@@ -20,6 +20,12 @@ EARLY_ACCESS_MODE = os.getenv("EARLY_ACCESS_MODE", "true").strip().lower() not i
     "0", "false", "no", "off"
 }
 
+# Custom Auth & JWT Configuration
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "seo-automation-custom-secret-key-change-in-production")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "10080")) # 7 days
+AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "seo_access_token")
+
 def validate_config():
     missing = []
     if not SUPABASE_URL:
