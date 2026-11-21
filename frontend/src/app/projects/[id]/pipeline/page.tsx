@@ -3,9 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Play, CheckCircle2, Loader2, Sparkles, Terminal, ArrowRight, ShieldCheck } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, getStoredToken } from "@/lib/api";
 import { PipelineEvent } from "@/lib/types";
-import { createClient } from "@/lib/supabase/client";
 
 export default function PipelinePage() {
   const params = useParams();
@@ -76,13 +75,13 @@ export default function PipelinePage() {
     streamAbortRef.current = controller;
 
     try {
-      const { data: { session } } = await createClient().auth.getSession();
-      if (!session?.access_token) {
+      const accessToken = getStoredToken();
+      if (!accessToken) {
         throw new Error("Your sign-in session has expired. Please sign in again.");
       }
 
       const response = await fetch(api.getPipelineStreamUrl(projectId, dryRun), {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
         signal: controller.signal,
       });
       if (!response.ok) {
