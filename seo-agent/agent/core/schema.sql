@@ -43,6 +43,27 @@ CREATE TABLE IF NOT EXISTS access_requests (
 CREATE INDEX IF NOT EXISTS idx_access_requests_email ON access_requests(lower(email));
 ALTER TABLE access_requests ENABLE ROW LEVEL SECURITY;
 
+-- 2. Durable Pipeline Runs & Artifact Checkpoints
+CREATE TABLE IF NOT EXISTS pipeline_runs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    phases_queued TEXT[] NOT NULL DEFAULT ARRAY['v01', 'v02', 'v03']::TEXT[],
+    dry_run BOOLEAN NOT NULL DEFAULT FALSE,
+    status TEXT NOT NULL DEFAULT 'running'
+        CHECK (status IN ('running', 'completed', 'failed', 'interrupted')),
+    current_phase TEXT,
+    progress_percentage INT NOT NULL DEFAULT 0 CHECK (progress_percentage BETWEEN 0 AND 100),
+    phases_completed TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+    artifact_manifest JSONB NOT NULL DEFAULT '{}'::jsonb,
+    error_message TEXT,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS pipeline_runs_project_started_idx ON pipeline_runs(project_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS pipeline_runs_project_status_idx ON pipeline_runs(project_id, status);
+ALTER TABLE pipeline_runs ENABLE ROW LEVEL SECURITY;
+
 
 -- 4. Topic Clusters Table (v0.1 Research)
 CREATE TABLE IF NOT EXISTS clusters (
