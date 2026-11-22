@@ -25,6 +25,7 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "seo-automation-custom-secret-key-c
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "10080")) # 7 days
 AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "seo_access_token")
+PIPELINE_ARTIFACTS_BUCKET = os.getenv("PIPELINE_ARTIFACTS_BUCKET", "pipeline-artifacts")
 
 def validate_config():
     missing = []

@@ -410,7 +410,7 @@ def save_generated_page_record(page_data: Dict[str, Any]) -> Dict[str, Any]:
         response = client.table("generated_pages").upsert(
             page_data,
             on_conflict="project_id,slug",
-        ).execute()
+        ).select("*").execute()
     except Exception as exc:
         logger.exception("Supabase generated page upsert failed")
         raise ProjectStoreError("Could not save generated page.") from exc
@@ -454,3 +454,84 @@ def get_generated_page_record(project_id: str, slug: str) -> Optional[Dict[str, 
         raise ProjectStoreError("Could not retrieve generated page.") from exc
     rows = response.data or []
     return rows[0] if rows else None
+
+
+def create_pipeline_run_record(
+    project_id: str,
+    phases_queued: List[str],
+    dry_run: bool,
+) -> Dict[str, Any]:
+    """Create a durable web-pipeline run record."""
+    client = _require_project_db_client()
+    try:
+        response = client.table("pipeline_runs").insert({
+            "project_id": project_id,
+            "phases_queued": phases_queued,
+            "dry_run": dry_run,
+            "status": "running",
+            "current_phase": phases_queued[0] if phases_queued else None,
+            "progress_percentage": 0,
+            "phases_completed": [],
+            "artifact_manifest": {},
+        }).select("*").execute()
+    except Exception as exc:
+        logger.exception("Supabase pipeline run creation failed")
+        raise ProjectStoreError("Could not create pipeline run record.") from exc
+    if not response.data:
+        raise ProjectStoreError("Pipeline run insert returned no record.")
+    return response.data[0]
+
+
+def get_resumable_pipeline_run(project_id: str, dry_run: bool) -> Optional[Dict[str, Any]]:
+    """Get the most recent incomplete run that can be resumed for this project."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("pipeline_runs")
+            .select("*")
+            .eq("project_id", project_id)
+            .eq("dry_run", dry_run)
+            .in_("status", ["running", "failed", "interrupted"])
+            .order("started_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase resumable pipeline run lookup failed")
+        raise ProjectStoreError("Could not find a resumable pipeline run.") from exc
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
+def get_latest_pipeline_run_record(project_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch the latest pipeline run for dashboard status display."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("pipeline_runs")
+            .select("*")
+            .eq("project_id", project_id)
+            .order("started_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase latest pipeline run lookup failed")
+        raise ProjectStoreError("Could not retrieve pipeline status.") from exc
+    rows = response.data or []
+    return rows[0] if rows else None
+
+
+def update_pipeline_run_record(run_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    """Persist pipeline progress, completed phases, checkpoints, or terminal state."""
+    client = _require_project_db_client()
+    values = {**updates, "updated_at": datetime.now(timezone.utc).isoformat()}
+    try:
+        response = client.table("pipeline_runs").update(values).eq("id", run_id).select("*").execute()
+    except Exception as exc:
+        logger.exception("Supabase pipeline run update failed")
+        raise ProjectStoreError("Could not update pipeline run record.") from exc
+    rows = response.data or []
+    if not rows:
+        raise ProjectStoreError("Pipeline run record was not found for update.")
+    return rows[0]
