@@ -2,7 +2,6 @@
 Pages & Frontend Component API Routes.
 """
 
-import json
 import re
 from pathlib import Path
 from typing import List, Optional
@@ -23,7 +22,9 @@ from phases.v03 import generate_additional_wave
 from core.db import (
     ProjectStoreError,
     ProjectStoreUnavailable,
+    get_generated_page_record,
     get_project_record,
+    list_generated_page_records,
     update_project_record,
 )
 from phases.v03_export_frontend import (
@@ -34,7 +35,6 @@ from phases.v03_export_frontend import (
     build_react_spa_page,
     compile_pages_to_zip_buffer,
     export_frontend_components,
-    load_pages_from_directory,
     normalize_download_base_url,
     zip_download_filename,
 )
@@ -67,50 +67,87 @@ def _project_pages_dir(project_id: str, owner_id: str) -> Path:
     return PROJECT_OUTPUTS_DIR / project_id / "v03" / "pages"
 
 
-def _project_page_json_path(pages_dir: Path, slug: str) -> Path:
-    """Build a page path from a single safe slug segment."""
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", slug):
-        raise HTTPException(status_code=400, detail="Invalid page slug.")
-    return pages_dir / f"{slug}.json"
+def _page_record_to_artifact(page: dict) -> dict:
+    """Adapt a database page row to the legacy page renderer's input shape."""
+    cluster_record = page.get("clusters") or {}
+    if isinstance(cluster_record, list):
+        cluster_record = cluster_record[0] if cluster_record else {}
+    cluster_name = cluster_record.get("name") or "General"
+    meta_title = page.get("meta_title") or page.get("title", "")
+    return {
+        "page_id": page.get("source_page_id") or str(page.get("id", "")),
+        "slug": page.get("slug", ""),
+        "url": page.get("url_path") or f"/{page.get('slug', '')}/",
+        "title": page.get("title", ""),
+        "h1": page.get("h1", ""),
+        "page_type": page.get("page_type", "guide"),
+        "search_intent": page.get("search_intent", "informational"),
+        "cluster": cluster_name,
+        "primary_keyword": page.get("primary_keyword"),
+        "secondary_keywords": page.get("secondary_keywords") or [],
+        "word_count": page.get("word_count", 0),
+        "markdown_content": page.get("markdown_content", ""),
+        "schema_type": page.get("schema_type", "Article"),
+        "brief": {
+            "meta_title": meta_title,
+            "meta_description": page.get("meta_description", ""),
+            "canonical_url": page.get("canonical_url", ""),
+            "h1": page.get("h1", ""),
+            "schema_type": page.get("schema_type", "Article"),
+        },
+        "metadata": {
+            "seo_title": meta_title,
+            "meta_description": page.get("meta_description", ""),
+            "canonical_url": page.get("canonical_url", ""),
+            "robots": page.get("robots", "index, follow"),
+            "schema_type": page.get("schema_type", "Article"),
+        },
+        "faq": {"faq_items": page.get("faqs") or []},
+        "internal_links": page.get("internal_links") or [],
+        "audit_result": {
+            "total_score": float(page.get("health_score", 100)),
+            "issues": page.get("validation_issues") or [],
+        },
+    }
+
+
+def _get_owned_page_records(project_id: str, owner_id: str) -> List[dict]:
+    """Validate project ownership and fetch its durable generated pages."""
+    _project_pages_dir(project_id, owner_id)
+    try:
+        return list_generated_page_records(project_id)
+    except ProjectStoreUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.get("", response_model=List[PageSummaryResponse])
 def list_generated_pages(project_id: str, user: ApprovedUser = Depends(get_approved_user)):
-    """List all generated pages for a project with health scores and metadata."""
-    pages_dir = _project_pages_dir(project_id, user.id)
-    if not pages_dir.exists():
-        return []
+    """List the durable page records for a project owned by the signed-in user."""
+    pages = _get_owned_page_records(project_id, user.id)
 
-    pages = load_pages_from_directory(pages_dir)
     summaries = []
-
-    for p in pages:
-        slug = p.get("slug", "untitled")
-        meta = p.get("metadata", {})
-        brief = p.get("brief", {})
-
-        title = brief.get("meta_title") or meta.get("seo_title") or p.get("title", slug.replace("-", " ").title())
-        h1 = brief.get("h1") or p.get("h1") or p.get("title", "")
-        p_kw = p.get("primary_keyword") or (p.get("keywords", [None])[0] if p.get("keywords") else None)
-
+    for row in pages:
+        page = _page_record_to_artifact(row)
+        brief = page["brief"]
         summaries.append(
             PageSummaryResponse(
-                slug=slug,
-                url_path=f"/{slug}/",
-                title=title,
-                h1=h1,
-                primary_keyword=p_kw,
-                secondary_keywords=p.get("secondary_keywords", []),
-                cluster=p.get("cluster", "General"),
-                page_type=p.get("page_type", "guide"),
-                search_intent=p.get("search_intent", "informational"),
-                word_count=p.get("word_count", 500),
-                health_score=float(p.get("audit_result", {}).get("total_score", 100)),
-                schema_type=p.get("schema_type", "Article"),
+                slug=page["slug"],
+                url_path=page["url"],
+                title=brief.get("meta_title") or page["title"],
+                h1=page["h1"],
+                primary_keyword=page["primary_keyword"],
+                secondary_keywords=page["secondary_keywords"],
+                cluster=page["cluster"],
+                page_type=page["page_type"],
+                search_intent=page["search_intent"],
+                word_count=page["word_count"],
+                health_score=page["audit_result"]["total_score"],
+                schema_type=page["schema_type"],
                 has_jsx_component=True,
             )
         )
-
     return summaries
 
 
@@ -121,13 +158,19 @@ def get_page_detail(
     user: ApprovedUser = Depends(get_approved_user),
 ):
     """Get full details of a specific page: markdown content, FAQ items, and pre-rendered Next.js JSX."""
-    pages_dir = _project_pages_dir(project_id, user.id)
-    json_path = _project_page_json_path(pages_dir, slug)
-    if not json_path.exists():
+    _project_pages_dir(project_id, user.id)  # validates the ID and project ownership
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", slug):
+        raise HTTPException(status_code=400, detail="Invalid page slug.")
+    try:
+        record = get_generated_page_record(project_id, slug)
+    except ProjectStoreUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ProjectStoreError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if record is None:
         raise HTTPException(status_code=404, detail=f"Page with slug '{slug}' not found.")
 
-    with open(json_path, "r", encoding="utf-8") as f:
-        p = json.load(f)
+    p = _page_record_to_artifact(record)
 
     meta = p.get("metadata", {})
     brief = p.get("brief", {})
@@ -189,11 +232,11 @@ def export_pages_to_frontend(
     user: ApprovedUser = Depends(get_approved_user),
 ):
     """Compile and export all pages to drop-in Next.js or React components."""
-    pages_dir = _project_pages_dir(project_id, user.id)
-    if not pages_dir.exists():
+    page_records = _get_owned_page_records(project_id, user.id)
+    if not page_records:
         raise HTTPException(status_code=400, detail="No generated pages found. Run v0.3 first.")
 
-    pages = load_pages_from_directory(pages_dir)
+    pages = [_page_record_to_artifact(row) for row in page_records]
     project_export_root = (DEFAULT_EXPORT_DIR / project_id).resolve()
     out_dir = Path(payload.output_dir).resolve() if payload.output_dir else project_export_root
     try:
@@ -232,8 +275,8 @@ def download_pages_zip(
     user: ApprovedUser = Depends(get_approved_user),
 ):
     """Compile generated pages into a Next.js ZIP and return it as a file download."""
-    pages_dir = _project_pages_dir(project_id, user.id)
-    if not pages_dir.exists():
+    page_records = _get_owned_page_records(project_id, user.id)
+    if not page_records:
         raise HTTPException(status_code=400, detail="No generated pages found. Run v0.3 first.")
 
     base_url = normalize_download_base_url(payload.base_url)
@@ -266,7 +309,7 @@ def download_pages_zip(
             raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found.")
 
     try:
-        pages = load_pages_from_directory(pages_dir)
+        pages = [_page_record_to_artifact(row) for row in page_records]
         zip_bytes, _count = compile_pages_to_zip_buffer(pages, base_url)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

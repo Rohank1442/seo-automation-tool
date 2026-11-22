@@ -378,3 +378,79 @@ def save_keywords(cluster_id: str, keywords: List[Dict[str, Any]]) -> List[Dict[
 
     _LOCAL_KEYWORDS[cluster_id] = data_to_upsert
     return data_to_upsert
+
+
+def get_cluster_id_for_page(project_id: str, cluster_name: Optional[str]) -> Optional[str]:
+    """Resolve a generated page's cluster label to a project-owned cluster ID."""
+    if not cluster_name:
+        return None
+
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("clusters")
+            .select("id")
+            .eq("project_id", project_id)
+            .eq("name", cluster_name)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase cluster lookup for generated page failed")
+        raise ProjectStoreError("Could not resolve the page's topic cluster.") from exc
+
+    rows = response.data or []
+    return str(rows[0]["id"]) if rows else None
+
+
+def save_generated_page_record(page_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Insert or replace the current page for a project's slug."""
+    client = _require_project_db_client()
+    try:
+        response = client.table("generated_pages").upsert(
+            page_data,
+            on_conflict="project_id,slug",
+        ).execute()
+    except Exception as exc:
+        logger.exception("Supabase generated page upsert failed")
+        raise ProjectStoreError("Could not save generated page.") from exc
+
+    if not response.data:
+        raise ProjectStoreError("Generated page upsert returned no record.")
+    return response.data[0]
+
+
+def list_generated_page_records(project_id: str) -> List[Dict[str, Any]]:
+    """List a project's generated pages and their related cluster names."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("generated_pages")
+            .select("*, clusters(name)")
+            .eq("project_id", project_id)
+            .order("slug")
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase generated page listing failed")
+        raise ProjectStoreError("Could not list generated pages.") from exc
+    return response.data or []
+
+
+def get_generated_page_record(project_id: str, slug: str) -> Optional[Dict[str, Any]]:
+    """Fetch one page by project and slug, including its related cluster name."""
+    client = _require_project_db_client()
+    try:
+        response = (
+            client.table("generated_pages")
+            .select("*, clusters(name)")
+            .eq("project_id", project_id)
+            .eq("slug", slug)
+            .limit(1)
+            .execute()
+        )
+    except Exception as exc:
+        logger.exception("Supabase generated page lookup failed")
+        raise ProjectStoreError("Could not retrieve generated page.") from exc
+    rows = response.data or []
+    return rows[0] if rows else None

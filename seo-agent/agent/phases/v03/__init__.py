@@ -52,6 +52,7 @@ from phases.v03.validator import (
     perform_full_content_validation,
     validate_single_page_content,
 )
+from phases.v03.page_persistence import persist_generated_page
 
 logger = logging.getLogger("v03")
 
@@ -138,7 +139,12 @@ def _load_reusable_content_briefs(
     return manifest
 
 
-def save_page_artifacts(result: GeneratedPageResult, pages_dir: Path):
+def save_page_artifacts(
+    result: GeneratedPageResult,
+    pages_dir: Path,
+    project_id: Optional[str] = None,
+    persist_to_database: bool = False,
+):
     """Save markdown and JSON file for a generated page."""
     pages_dir.mkdir(parents=True, exist_ok=True)
     slug = result.slug.strip("/").replace("/", "_") or "home"
@@ -170,6 +176,9 @@ def save_page_artifacts(result: GeneratedPageResult, pages_dir: Path):
     with open(json_file, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
 
+    if project_id and persist_to_database and result.status == "completed":
+        persist_generated_page(project_id, result)
+
 
 def generate_additional_wave(
     strategy_name: str = "next_best",
@@ -189,6 +198,7 @@ def generate_additional_wave(
     out_dir = output_dir or V03_OUTPUTS_DIR
     pages_dir = out_dir / "pages"
     pages_dir.mkdir(parents=True, exist_ok=True)
+    project_id = Path(pipeline_inputs_dir).name if pipeline_inputs_dir else None
 
     logger.info(f"Starting Multi-Wave Expansion: Strategy='{strategy_name}' | Batch={batch_size} | Cluster='{cluster_name}'")
 
@@ -221,6 +231,12 @@ def generate_additional_wave(
     for idx, cand in enumerate(selected_candidates, start=1):
         logger.info(f"[Wave Progress] Generating page {idx}/{len(selected_candidates)}: '{cand.title}' ({cand.slug})")
         res = pipeline.execute(cand, dry_run=dry_run)
+        save_page_artifacts(
+            res,
+            pages_dir,
+            project_id=project_id,
+            persist_to_database=not dry_run,
+        )
         generated_results.append(res)
 
     generated_slugs = [r.slug for r in generated_results if r.status == "completed"]
@@ -258,6 +274,7 @@ def run_content_generation_phase(
     configure_logging()
     out_dir = output_dir or V03_OUTPUTS_DIR
     pages_dir = out_dir / "pages"
+    project_id = Path(pipeline_inputs_dir).name if pipeline_inputs_dir else None
     out_dir.mkdir(parents=True, exist_ok=True)
     pages_dir.mkdir(parents=True, exist_ok=True)
 
@@ -362,7 +379,12 @@ def run_content_generation_phase(
         logger.info(f"[Page {idx}/{len(page_contexts)}] Generating '{ctx.title}'...")
         matched_brief = briefs_map.get(ctx.page_id) or generate_structured_content_brief(ctx, dry_run=dry_run)
         res = process_single_page_from_brief(ctx, matched_brief, dry_run=dry_run)
-        save_page_artifacts(res, pages_dir)
+        save_page_artifacts(
+            res,
+            pages_dir,
+            project_id=project_id,
+            persist_to_database=not dry_run,
+        )
         results.append(res)
 
     # 7. Export Generated Content JSON, Manifest & Summary Report
